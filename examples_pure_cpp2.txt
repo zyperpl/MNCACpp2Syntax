@@ -1,0 +1,227 @@
+#include <raylib.h>
+
+template<typename T>
+T random_value(const T &min, const T &max)
+{
+  return cpp2::unsafe_narrow<T>(GetRandomValue(cpp2::unsafe_narrow<int>(min), cpp2::unsafe_narrow<int>(max)));
+}
+
+Color random_color()
+{
+  return Color { random_value<unsigned char>(0, 255), 
+                 random_value<unsigned char>(0, 255), 
+                 random_value<unsigned char>(0, 255), 255 };
+}
+
+Ball : type = {
+  public x : float;
+  public y : float;
+
+  vx : float = (0.0f);
+  vy : float = (0.0f);  
+  color : Color = random_color();
+
+  operator=: (out this, new_x: float, new_y: float) = {
+    this.x = new_x;
+    this.y = new_y;
+  }
+
+  operator=: (out this, in that) = {
+  }
+
+  update : (inout this) = {
+    r := random_value<float>(0.0f, 100.0f) / 100.0f;
+
+    this.vx *= 0.991f;
+    this.vy *= 0.991f;
+    this.vy += 0.08f;
+  
+    this.x += vx;
+    this.y += vy;
+
+    if this.x < 0 || this.x > window_width
+    {
+      this.vx *= -0.9f;
+      this.vy += -0.5f + r;
+
+      this.x = std::clamp(this.x, 0.0f, cpp2::unsafe_narrow<float>(window_width)) + vx * 2.0f;
+    }
+
+    if this.y < 0 || this.y > window_height
+    {
+      this.vy *= -0.9f;
+      this.vx += -0.5f + r;
+
+      this.y = std::clamp(this.y, 0.0f, cpp2::unsafe_narrow<float>(window_height)) + vy * 2.0f;
+    }
+
+    if mouse_x.has_value() && mouse_y.has_value()
+    {
+      dx := mouse_x.value() - this.x;
+      dy := mouse_y.value() - this.y;
+      distance := std::sqrt(dx * dx + dy * dy);
+      force := 1 / (distance + 1) * r;
+      this.vx += dx * force;
+      this.vy += dy * force;
+
+      color = random_color();
+    }
+  }
+
+  draw : (in this) = {
+    DrawCircle(x, y, 2.0f, color);
+  }
+}
+
+balls : std::vector<Ball> = ();
+
+draw_scene : () = 
+{
+  for balls do (ball) {
+    ball.draw();
+  }
+}
+
+window_width : int = 800;
+window_height : int = 600;
+
+mouse_x : std::optional<int> = ();
+mouse_y : std::optional<int> = ();
+
+create_random_ball: () -> Ball = {
+  rw := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width));
+  rh := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height));
+  return Ball(rw as float, rh as float);
+}
+
+main : () = {
+  window_name := "Hello CppFront";
+  InitWindow(window_width, window_height, window_name);
+  SetTargetFPS(170);
+
+  std::cout << "Hello World\n";
+
+  counter := 100;
+  while counter > 0
+  {    
+    balls.push_back(create_random_ball());
+    counter -= 1;
+  }
+
+  frame: uint64_t = 0;
+
+  while !WindowShouldClose()
+  {
+    frame += 1;
+    for balls do (inout ball) 
+    {
+      ball.update();
+
+      if frame % 1000 == 0
+      {
+        ball.print_xy();
+      }
+    }
+
+    window_width = GetRenderWidth();
+    window_height = GetRenderHeight();
+
+    if !IsMouseButtonDown(MOUSE_BUTTON_LEFT)
+    {
+      mouse_x.reset();
+      mouse_y.reset();
+    } 
+    else
+    {
+      mouse_x = GetMouseX();
+      mouse_y = GetMouseY();
+    }
+
+    if IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)
+    {
+      balls.push_back(create_random_ball());
+    }
+
+    if IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
+    {
+      ball := Ball(cpp2::unsafe_narrow<float>(GetMouseX()), cpp2::unsafe_narrow<float>(GetMouseY()));
+      balls.push_back(ball);
+    }
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    draw_scene();
+
+    DrawFPS(1, 1);
+    EndDrawing();
+  }
+}
+
+print_xy : (ball : Ball) = {
+  std::cout << "ball.x = " << ball.x << ", ball.y = " << ball.y << "\n";
+}
+my_class : class = {
+    private x: int;
+
+    public 
+        operator =: (out this, initial_x: int) = {
+            this.x = initial_x;
+        }
+
+        // Member function to set 'x'
+        set_x: (inout this, new_x: int) = {
+            this.x = new_x;
+        }
+
+        // Member function to get 'x'
+        get_x: (this) -> int = {
+            return this.x;
+        }
+
+        // Member function to increment 'x'
+        increment_x: (inout this) = {
+            this.x += 1;
+        }
+}
+
+main: () = {
+    obj: my_class = (10); 
+
+    obj.set_x(20);       
+    std::cout << "x is: " << obj.get_x() << "\n";
+
+    obj.increment_x();   
+    std::cout << "x is now: " << obj.get_x() << "\n";
+}
+add: (a: int, b: int) -> int = {
+    return a + b;
+}
+
+subtract: (a: int, b: int) -> int = {
+    return a - b;
+}
+
+multiply: (a: int, b: int) -> int = {
+    return a * b;
+}
+
+divide: (a: int, b: int) -> int = {
+    // Simple division, without handling division by zero
+    return a / b;
+}
+
+// Main function to demonstrate the usage of the calculator
+
+main: () = {
+    result1 := add(5, 3);        // Expected: 8
+    result2 := subtract(5, 3);   // Expected: 2
+    result3 := multiply(5, 3);   // Expected: 15
+    result4 := divide(6, 2);     // Expected: 3
+
+    // Print the results
+    std::cout << "5 + 3 = " << result1 << "\n";
+    std::cout << "5 - 3 = " << result2 << "\n";
+    std::cout << "5 * 3 = " << result3 << "\n";
+    std::cout << "6 / 2 = " << result4 << "\n";
+}

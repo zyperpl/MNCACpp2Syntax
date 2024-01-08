@@ -1,0 +1,33 @@
+my_class : class = {
+    private x: int;
+
+    public 
+        operator =: (out this, initial_x: int) = {
+            this.x = initial_x;
+        }
+
+        // Member function to set 'x'
+        set_x: (inout this, new_x: int) = {
+            this.x = new_x;
+        }
+
+        // Member function to get 'x'
+        get_x: (this) -> int = {
+            return this.x;
+        }
+
+        // Member function to increment 'x'
+        increment_x: (inout this) = {
+            this.x += 1;
+        }
+}
+
+main: () = {
+    obj: my_class = (10); 
+
+    obj.set_x(20);       
+    std::cout << "x is: " << obj.get_x() << "\n";
+
+    obj.increment_x();   
+    std::cout << "x is now: " << obj.get_x() << "\n";
+}
