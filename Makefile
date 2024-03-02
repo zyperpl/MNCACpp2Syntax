@@ -8,10 +8,10 @@ mnca: mnca.cpp raylib
 	$(CXX) -o mnca mnca.cpp $(CXXFLAGS)
 
 mnca.cpp: mnca.cpp2 $(CPPFRONT)
-	$(CPPFRONT) mnca.cpp2
+	$(CPPFRONT) -verb mnca.cpp2
 
 $(CPPFRONT):
-	git clone https://github.com/hsutter/cppfront cppfront
+	test -d cppfront || git clone https://github.com/hsutter/cppfront cppfront
 	cd cppfront && git reset --hard d59ef7c
 	$(CXX) -std=c++20 -o $(CPPFRONT) cppfront/source/cppfront.cpp
 

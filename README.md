@@ -1,7 +1,7 @@
 # MNCA - simple visualization in CppFront (C++2 Syntax)
 
 ## Description
-Simple proof-of-concept of a visualization of multiple neighborhoods cellular automata (MNCA) in Cpp2. 
+Simple proof-of-concept / learning project of a visualization of multiple neighborhoods cellular automata (MNCA) in Cpp2. 
 It uses [Raylib](https://raylib.com/) as a drawing library.
 
 ## Dependencies
