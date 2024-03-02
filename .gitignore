@@ -1,0 +1,5 @@
+cppfront/
+raylib/
+*.o
+*.cpp
+mnca
