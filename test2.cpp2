@@ -1,6 +1,0 @@
-main: () -> int = {
-  add: (a: int, b: int) -> int = { return a + b; }
-
-  funcPtr: ((int, int) -> int)* = add;
-  result: int = funcPtr(2, 3);
-}
