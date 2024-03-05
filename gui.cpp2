@@ -1,0 +1,54 @@
+#include "types.h2"
+
+#include <raylib.h>
+
+#include "config.h2"
+
+GUI : type = {
+  font : Font = GetFontDefault();
+  font_size : u64 = 10;
+  text_spacing : u64 = 0;
+
+  public draw_text : (this, text: std::string_view, copy rect: Rectangle, justification: TextJustification, color: Color) = {
+
+    size : Vector2;
+    if justification == TextJustification::Left { size = Vector2(0, 0); }
+    else {
+      size = MeasureTextEx(font, text.data(), font_size, text_spacing);
+    }
+
+    if justification == TextJustification::Center { rect.x += rect.width / 2 - size.x / 2; }
+    if justification == TextJustification::Right  { rect.x += rect.width - size.x; }
+  
+    DrawText(text.data(), rect.x, rect.y, font_size, color);
+    DrawText(text.data(), rect.x + 1, rect.y + 1, font_size, ColorBrightness(color, -0.5f));
+  }
+
+  public draw : (this, config: Config) = {
+    draw_board(config);
+  }
+
+  private draw_board : (this, config: Config) = {
+    size: const _ = 30;
+    iy := 0; while iy < config.colors_number next iy++
+    {
+      DrawRectangle(-1, (iy + 1) * size, size, size, config.all_colors[iy]);
+      DrawRectangle((iy + 1) * size, -1, size, size, config.all_colors[iy]);
+      ix := 0; while ix < config.colors_number next ix++
+      {
+        x := ix * size;
+        y := iy * size;
+        attraction := config.attraction_matrix[iy][ix];
+        color := ColorBrightness(RED, 1.0f - attraction);
+        if attraction < 0.0f {
+          color = ColorBrightness(BLUE, 1.0f - (-attraction));
+        }
+        DrawRectangle(x + size, y + size, size, size, color); 
+        text: const _ = TextFormat("%.02f", attraction);
+
+        text_rect := Rectangle(x + size, y + size + size / 2, size, size);
+        draw_text(text, text_rect, TextJustification::Center, ColorBrightness(color, -0.1f));
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+#include "utils.h2"
+
+RANDOM_ATTRACTION: const bool = true;
+
+Config: @struct type = {
+  all_colors: const std::vector<Color> = ( RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY );
+  colors_number: const int = 5;
+  attraction_matrix: std::vector<std::vector<float>>;
+
+  generate_attraction_matrix: (num: int) -> std::vector<std::vector<float>> = {
+    matrix := std::vector<std::vector<float>>(num, std::vector<float>(num, 0.0f));
+
+    if constexpr RANDOM_ATTRACTION {
+      i := 0; while i < num next i++
+      {
+        j := 0; while j < num next j++
+        {
+          val := random_value<float>(-1.0f, 1.0f);
+
+          if i == j {
+          //  val = 1.0f; // TODO: add as parameter
+          }
+
+          matrix[i][j] = val;
+          std::cout << matrix[i][j] << " ";
+        }
+        std::cout << "\n";
+      }
+    } else {
+      matrix[0][0] = -0.2f;
+      matrix[0][1] = +0.1f;
+      matrix[0][2] = -0.0f;
+      matrix[1][0] = -0.5f;
+      matrix[1][1] = -1.0f;
+      matrix[1][2] = +1.0f;
+      matrix[2][0] = +1.0f;
+      matrix[2][1] = +0.5f;
+      matrix[2][2] = -0.2f;
+    }
+
+    return matrix;
+  }
+}

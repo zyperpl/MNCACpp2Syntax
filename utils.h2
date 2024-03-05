@@ -1,0 +1,7 @@
+#include <raylib.h>
+
+random_value: <T> (min: T, max: T) -> T = 
+  cpp2::unsafe_narrow<T>(GetRandomValue(cpp2::unsafe_narrow<int>(min), cpp2::unsafe_narrow<int>(max)));
+
+random_value: <T> (min: float, max: float) -> float =
+  min + (GetRandomValue(0, 10000) / 10000.0f) * (max - min);

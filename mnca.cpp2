@@ -1,100 +1,23 @@
 #include <raylib.h>
 
-RANDOM_ATTRACTION: const bool = true;
-
-random_value: <T> (min: T, max: T) -> T =
-{
-  return cpp2::unsafe_narrow<T>(GetRandomValue(cpp2::unsafe_narrow<int>(min), cpp2::unsafe_narrow<int>(max)));
-}
-
-random_value: <T> (min: float, max: float) -> float =
-{
-  r: float = GetRandomValue(0, 10000) / 10000.0f;
-  return min + r * (max - min);
-}
-
-Config: @struct type = {
-  all_colors: const std::vector<Color> = ( RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY );
-  colors_number: const int = 5;
-  attraction_matrix: std::vector<std::vector<float>>;
-
-  generate_attraction_matrix: (num: int) -> std::vector<std::vector<float>> = {
-    matrix := std::vector<std::vector<float>>(num, std::vector<float>(num, 0.0f));
-
-    if constexpr RANDOM_ATTRACTION {
-      i := 0; while i < num next i++
-      {
-        j := 0; while j < num next j++
-        {
-          val := random_value<float>(-1.0f, 1.0f);
-
-          if i == j {
-          //  val = 1.0f; // TODO: add as parameter
-          }
-
-          matrix[i][j] = val;
-          std::cout << matrix[i][j] << " ";
-        }
-        std::cout << "\n";
-      }
-    } else {
-      matrix[0][0] = -0.2f;
-      matrix[0][1] = +0.1f;
-      matrix[0][2] = -0.0f;
-      matrix[1][0] = -0.5f;
-      matrix[1][1] = -1.0f;
-      matrix[1][2] = +1.0f;
-      matrix[2][0] = +1.0f;
-      matrix[2][1] = +0.5f;
-      matrix[2][2] = -0.2f;
-    }
-
-    return matrix;
-  }
-}
-Config config;
-
-random_color: () -> Color =
-{
-  return config.all_colors[random_value<int>(0, config.colors_number)];
-}
-
-vec2: <T> type = {
-  public x: T;
-  public y: T;
-
-  operator=: (out this, new_x: T, new_y: T) = {
-    this.x = new_x;
-    this.y = new_y;
-  }
-
-  operator=: (out this, in that) = {
-    this.x = that.x;
-    this.y = that.y;
-  }
-}
-
-template<typename T>
-auto operator<<(std::ostream &os, const vec2<T> &v) -> std::ostream & {
-  os << "(" << v.x << ", " << v.y << ")";
-  return os;
-}
-
+#include "types.h2"
+#include "config.h2"
 
 Cell: type = {
   public position: vec2<float> = (0.0f, 0.0f);
   public velocity: vec2<float> = (0.0f, 0.0f);
 
-  color_num: int = random_value<int>(0, config.colors_number - 1);
+  color_num: int = 0;
 
-  operator=: (out this, new_x: float, new_y: float) = {
-    this.position = vec2<float>(new_x, new_y);
+  operator=: (out this, new_x: float, new_y: float, config: Config) = {
+    position = vec2<float>(new_x, new_y);
+    color_num = random_value<int>(0, config.colors_number - 1);
   }
 
   operator=: (out this, in that) = {
   }
 
-  update: (inout this) = {
+  update: (inout this, config: Config) = {
     friction := 0.8f;
     gravity := 0.0f;
 
@@ -111,8 +34,7 @@ Cell: type = {
 
     cell_counter := 0;
     for cells do (inout other) {
-      if this& != other&
-      {
+      if this& != other& {
         dx := other.position.x - position.x;
         dy := other.position.y - position.y;
 
@@ -139,12 +61,12 @@ Cell: type = {
         other.velocity.x += sfx * 0.8f;
         other.velocity.y += sfy * 0.8f;
 
-        damping := 1.0f;
+        damping := 0.5f;
         force := config.attraction_matrix[color_num][other.color_num] / damping;
         fx := (dx / dist2) * force;
         fy := (dy / dist2) * force;
 
-        force_max : const _ = 0.5f;
+        force_max : const _ = 0.1f;
         fx = std::clamp(fx, -force_max, force_max);
         fy = std::clamp(fy, -force_max, force_max);
             
@@ -153,6 +75,7 @@ Cell: type = {
 
         cell_counter += 1;
 
+        // TODO: check for random neighbor cells, not only for the first N cells
         if cell_counter > 200 {
           break;
         }
@@ -191,7 +114,7 @@ Cell: type = {
     }
   }
 
-  draw: (in this) = {
+  draw: (in this, config: Config) = {
     color: Color = config.all_colors[color_num];
     DrawCircle(position.x, position.y, 2.0f, color);
   }
@@ -199,47 +122,16 @@ Cell: type = {
 
 cells: std::vector<Cell> = ();
 
-draw_scene: () = {
-  for cells do (in cell) {
-    cell.draw();
-  }
-}
-
-#if 0
-draw_gui: () = {
-  size: const _ = 30;
-  iy := 0; while iy < config.colors_number next iy++
-  {
-    DrawRectangle(0, (iy + 1) * size, size, size, config.all_colors[iy]);
-    DrawRectangle((iy + 1) * size, 0, size, size, config.all_colors[iy]);
-    ix := 0; while ix < config.colors_number next ix++
-    {
-      x := ix * size;
-      y := iy * size;
-      attraction := config.attraction_matrix[iy][ix];
-      color := ColorBrightness(RED, 1.0f - attraction);
-      if attraction < 0.0f {
-        color = ColorBrightness(BLUE, 1.0f - (-attraction));
-      }
-      DrawRectangle(x + size, y + size, size, size, color); 
-      text: const _ = TextFormat("%.02f", attraction);
-      DrawText(text, x + size, y + size, 10, ColorBrightness(color, -0.1f));
-      DrawText(text, x + size + 1, y + size + 1, 10, ColorBrightness(color, -0.9f));
-    }
-  }
-}
-#endif
-
 window_width: int = 800;
 window_height: int = 600;
 
 mouse_x: std::optional<int> = ();
 mouse_y: std::optional<int> = ();
 
-create_random_cell: () -> Cell = {
+create_random_cell: (config: Config) -> Cell = {
   rw := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width));
   rh := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height));
-  return Cell(rw as float, rh as float);
+  return Cell(rw as float, rh as float, config);
 }
 
 main: () = {
@@ -247,12 +139,15 @@ main: () = {
   InitWindow(window_width, window_height, window_name);
   SetTargetFPS(170);
 
+  config := Config();
+  gui := GUI();
+
   config.attraction_matrix = config.generate_attraction_matrix(config.colors_number);
 
   std::cout << "Hello, cppfront!\n";
 
   cell_num := 200; while cell_num > 0 next cell_num -= 1 {    
-    cells.push_back(create_random_cell());
+    cells.push_back(create_random_cell(config));
   }
 
   frame: uint64_t = 0;
@@ -262,7 +157,7 @@ main: () = {
     frame += 1;
     for cells do (inout cell) 
     {
-      cell.update();
+      cell.update(config);
 
       if frame % 100000 == 0
       {
@@ -286,21 +181,22 @@ main: () = {
 
     if IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)
     {
-      cells.push_back(create_random_cell());
+      cells.push_back(create_random_cell(config));
     }
 
     if IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
     {
-      cell := Cell(cpp2::unsafe_narrow<float>(GetMouseX()), cpp2::unsafe_narrow<float>(GetMouseY()));
+      cell := Cell(cpp2::unsafe_narrow<float>(GetMouseX()), cpp2::unsafe_narrow<float>(GetMouseY()), config);
       cells.push_back(cell);
     }
 
     BeginDrawing();
-    //ClearBackground(BLACK);
-    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.1f));
+    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
 
-    draw_scene();
-    //draw_gui();
+    for cells do (in cell) {
+      cell.draw(config);
+    }
+    gui.draw(config);
 
     EndDrawing();
   }

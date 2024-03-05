@@ -1,5 +1,9 @@
 cppfront/
 raylib/
 *.o
-*.cpp
-mnca
+build/*.cpp
+build/*.h
+build/*.hpp
+callgrind.out.*
+massif.out.*
+build/mnca

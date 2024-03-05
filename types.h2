@@ -1,0 +1,26 @@
+vec2: <T> type = {
+  public x: T;
+  public y: T;
+
+  operator=: (out this, new_x: T, new_y: T) = {
+    this.x = new_x;
+    this.y = new_y;
+  }
+
+  operator=: (out this, in that) = {
+    this.x = that.x;
+    this.y = that.y;
+  }
+}
+
+template<typename T>
+auto operator<<(std::ostream &os, const vec2<T> &v) -> std::ostream & {
+  os << "(" << v.x << ", " << v.y << ")";
+  return os;
+}
+
+TextJustification : @enum type = {
+  Left;
+  Center;
+  Right;
+}
