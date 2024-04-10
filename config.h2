@@ -4,7 +4,7 @@ RANDOM_ATTRACTION: const bool = true;
 
 Config: @struct type = {
   all_colors: const std::vector<Color> = ( RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY );
-  colors_number: const int = 5;
+  colors_number: const u8 = 5;
   attraction_matrix: std::vector<std::vector<float>>;
 
   generate_attraction_matrix: (num: int) -> std::vector<std::vector<float>> = {

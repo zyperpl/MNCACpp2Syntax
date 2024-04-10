@@ -24,26 +24,27 @@ class Cell {
   public: vec2<float> position {0.0f, 0.0f}; 
   public: vec2<float> velocity {0.0f, 0.0f}; 
 
-  private: int color_num {0}; 
+  private: cpp2::u8 color_num {0}; 
+  private: cpp2::u32 cell_iter_index {0}; 
 
   public: explicit Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config);
 
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   public: Cell(Cell const& that);
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   public: auto operator=(Cell const& that) -> Cell& ;
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   public: Cell(Cell&& that) noexcept;
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   public: auto operator=(Cell&& that) noexcept -> Cell& ;
 
-#line 20 "mnca.cpp2"
+#line 21 "mnca.cpp2"
   public: auto update(cpp2::in<Config> config) & -> void;
 
-#line 117 "mnca.cpp2"
+#line 113 "mnca.cpp2"
   public: auto draw(cpp2::in<Config> config) const& -> void;
 
-#line 121 "mnca.cpp2"
+#line 117 "mnca.cpp2"
 };
 
 extern std::vector<Cell> cells;
@@ -56,56 +57,60 @@ extern std::optional<int> mouse_y;
 
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell;
 
-#line 137 "mnca.cpp2"
+#line 133 "mnca.cpp2"
 auto main() -> int;
 
-#line 205 "mnca.cpp2"
+#line 202 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void;
 
 //=== Cpp2 function definitions =================================================
 
 #line 1 "mnca.cpp2"
 
-#line 12 "mnca.cpp2"
+#line 13 "mnca.cpp2"
   Cell::Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config)
     : position{ vec2<float>(new_x, new_y) }
-    , color_num{ random_value<int>(0, config.colors_number - 1) }{
+    , color_num{ random_value<cpp2::u8>(cpp2::as_<cpp2::u8, 0>(), config.colors_number - 1) }{
 
-#line 15 "mnca.cpp2"
+#line 16 "mnca.cpp2"
   }
 
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   Cell::Cell(Cell const& that)
   : position{ that.position }
   , velocity{ that.velocity }
-  , color_num{ that.color_num }{
-#line 18 "mnca.cpp2"
+  , color_num{ that.color_num }
+  , cell_iter_index{ that.cell_iter_index }{
+#line 19 "mnca.cpp2"
   }
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   auto Cell::operator=(Cell const& that) -> Cell& {
   position = that.position;
   velocity = that.velocity;
   color_num = that.color_num;
+  cell_iter_index = that.cell_iter_index;
   return *this;
-#line 18 "mnca.cpp2"
+#line 19 "mnca.cpp2"
   }
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   Cell::Cell(Cell&& that) noexcept
   : position{ std::move(that).position }
   , velocity{ std::move(that).velocity }
-  , color_num{ std::move(that).color_num }{
-#line 18 "mnca.cpp2"
+  , color_num{ std::move(that).color_num }
+  , cell_iter_index{ std::move(that).cell_iter_index }{
+#line 19 "mnca.cpp2"
   }
-#line 17 "mnca.cpp2"
+#line 18 "mnca.cpp2"
   auto Cell::operator=(Cell&& that) noexcept -> Cell& {
   position = std::move(that).position;
   velocity = std::move(that).velocity;
   color_num = std::move(that).color_num;
+  cell_iter_index = std::move(that).cell_iter_index;
   return *this;
-#line 18 "mnca.cpp2"
+#line 19 "mnca.cpp2"
   }
 
-#line 20 "mnca.cpp2"
+#line 21 "mnca.cpp2"
   auto Cell::update(cpp2::in<Config> config) & -> void{
     auto friction {0.8f}; 
     auto gravity {0.0f}; 
@@ -121,8 +126,10 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
       velocity.y *= std::move(max_vel_len) / std::move(vel_len);
     }
 
-    auto cell_counter {0}; 
-    for ( auto& other : cells ) {
+    auto cell_counter {0}; for( ; cpp2::cmp_less(cell_counter,CPP2_UFCS(ssize)(cells) / 4); cell_counter += 1 ) {
+      auto const other {CPP2_ASSERT_IN_BOUNDS(cells, cell_iter_index % CPP2_UFCS(size)(cells))}; 
+      cell_iter_index = (cell_iter_index + 1) % CPP2_UFCS(size)(cells);
+
       if (&(*this) != &other) {
         auto dx {other.position.x - position.x}; 
         auto dy {other.position.y - position.y}; 
@@ -136,22 +143,21 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
           continue;
         }
 
+        // might have some calculation bugs
         auto dist2 {dist * dist}; 
 
         auto sfx {dx / (dist2)}; 
         auto sfy {dy / (dist2)}; 
 
-        auto const separation_max {0.1f}; 
+        auto const separation_max {0.8f}; 
         sfx = std::clamp(sfx, -separation_max, separation_max);
         sfy = std::clamp(sfy, -separation_max, std::move(separation_max));
 
-        velocity.x -= sfx;
-        velocity.y -= sfy;
-        other.velocity.x += std::move(sfx) * 0.8f;
-        other.velocity.y += std::move(sfy) * 0.8f;
+        velocity.x -= std::move(sfx);
+        velocity.y -= std::move(sfy);
 
-        auto damping {0.5f}; 
-        auto force {CPP2_ASSERT_IN_BOUNDS(CPP2_ASSERT_IN_BOUNDS(config.attraction_matrix, color_num), other.color_num) / std::move(damping)}; 
+        auto damping {0.4f}; 
+        auto force {CPP2_ASSERT_IN_BOUNDS(CPP2_ASSERT_IN_BOUNDS(config.attraction_matrix, color_num), std::move(other).color_num) / std::move(damping)}; 
         auto fx {(std::move(dx) / dist2) * force}; 
         auto fy {(std::move(dy) / std::move(dist2)) * std::move(force)}; 
 
@@ -162,12 +168,6 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
         velocity.x += std::move(fx);
         velocity.y += std::move(fy);
 
-        cell_counter += 1;
-
-        // TODO: check for random neighbor cells, not only for the first N cells
-        if (cpp2::cmp_greater(cell_counter,200)) {
-          break;
-        }
       }
     }
 
@@ -203,13 +203,13 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
     }
   }
 
-#line 117 "mnca.cpp2"
+#line 113 "mnca.cpp2"
   auto Cell::draw(cpp2::in<Config> config) const& -> void{
     Color color {CPP2_ASSERT_IN_BOUNDS(config.all_colors, color_num)}; 
     DrawCircle(position.x, position.y, 2.0f, std::move(color));
   }
 
-#line 123 "mnca.cpp2"
+#line 119 "mnca.cpp2"
 std::vector<Cell> cells {}; 
 
 int window_width {800}; 
@@ -218,14 +218,14 @@ int window_height {600};
 std::optional<int> mouse_x {}; 
 std::optional<int> mouse_y {}; 
 
-#line 131 "mnca.cpp2"
+#line 127 "mnca.cpp2"
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell{
   auto rw {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width))}; 
   auto rh {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height))}; 
   return Cell(cpp2::as_<float>(std::move(rw)), cpp2::as_<float>(std::move(rh)), config); 
 }
 
-#line 137 "mnca.cpp2"
+#line 133 "mnca.cpp2"
 auto main() -> int{
   auto window_name {"Hello, cppfront"}; 
   InitWindow(window_width, window_height, std::move(window_name));
@@ -242,7 +242,7 @@ auto main() -> int{
     CPP2_UFCS(push_back)(cells, create_random_cell(config));
   }
 
-  uint64_t frame {0}; 
+  cpp2::u64 frame {0}; 
 
   while( !(WindowShouldClose()) ) 
   {
@@ -283,7 +283,8 @@ auto main() -> int{
     }
 
     BeginDrawing();
-    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
+    //DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
+    DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for ( auto const& cell : cells ) {
       CPP2_UFCS(draw)(cell, config);
@@ -294,7 +295,7 @@ auto main() -> int{
   }
 }
 
-#line 205 "mnca.cpp2"
+#line 202 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void{
   std::cout << "cell.position = " << cell.position << "\n";
 }

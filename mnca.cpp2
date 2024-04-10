@@ -7,11 +7,12 @@ Cell: type = {
   public position: vec2<float> = (0.0f, 0.0f);
   public velocity: vec2<float> = (0.0f, 0.0f);
 
-  color_num: int = 0;
+  color_num: u8 = 0;
+  cell_iter_index: u32 = 0;
 
   operator=: (out this, new_x: float, new_y: float, config: Config) = {
     position = vec2<float>(new_x, new_y);
-    color_num = random_value<int>(0, config.colors_number - 1);
+    color_num = random_value<u8>(0 as u8, config.colors_number - 1);
   }
 
   operator=: (out this, in that) = {
@@ -32,8 +33,10 @@ Cell: type = {
       velocity.y *= max_vel_len / vel_len;
     }
 
-    cell_counter := 0;
-    for cells do (inout other) {
+    cell_counter := 0; while cell_counter < cells.ssize() / 4 next cell_counter += 1 {
+      other : const _ = cells[cell_iter_index % cells.size()];
+      cell_iter_index = (cell_iter_index + 1) % cells.size();
+
       if this& != other& {
         dx := other.position.x - position.x;
         dy := other.position.y - position.y;
@@ -47,21 +50,20 @@ Cell: type = {
           continue;
         }
 
+        // might have some calculation bugs
         dist2 := dist * dist;
 
         sfx := dx / (dist2); 
         sfy := dy / (dist2); 
 
-        separation_max : const _ = 0.1f;
+        separation_max : const _ = 0.8f;
         sfx = std::clamp(sfx, -separation_max, separation_max);
         sfy = std::clamp(sfy, -separation_max, separation_max);
 
         velocity.x -= sfx;
         velocity.y -= sfy;
-        other.velocity.x += sfx * 0.8f;
-        other.velocity.y += sfy * 0.8f;
 
-        damping := 0.5f;
+        damping := 0.4f;
         force := config.attraction_matrix[color_num][other.color_num] / damping;
         fx := (dx / dist2) * force;
         fy := (dy / dist2) * force;
@@ -73,12 +75,6 @@ Cell: type = {
         velocity.x += fx;
         velocity.y += fy;
 
-        cell_counter += 1;
-
-        // TODO: check for random neighbor cells, not only for the first N cells
-        if cell_counter > 200 {
-          break;
-        }
       }
     }
 
@@ -150,7 +146,7 @@ main: () = {
     cells.push_back(create_random_cell(config));
   }
 
-  frame: uint64_t = 0;
+  frame: u64 = 0;
 
   while !WindowShouldClose()
   {
@@ -191,7 +187,8 @@ main: () = {
     }
 
     BeginDrawing();
-    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
+    //DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
+    DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for cells do (in cell) {
       cell.draw(config);

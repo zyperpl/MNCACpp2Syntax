@@ -24,7 +24,7 @@ extern bool const RANDOM_ATTRACTION;
 
 class Config {
   public: std::vector<Color> const all_colors {RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY}; 
-  public: int const colors_number {5}; 
+  public: cpp2::u8 const colors_number {5}; 
   public: std::vector<std::vector<float>> attraction_matrix; 
 
   public: [[nodiscard]] static auto generate_attraction_matrix(cpp2::in<int> num) -> std::vector<std::vector<float>>;

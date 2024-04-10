@@ -9,6 +9,8 @@ GUI : type = {
   font_size : u64 = 10;
   text_spacing : u64 = 0;
 
+  private show_board : bool = true;
+
   public draw_text : (this, text: std::string_view, copy rect: Rectangle, justification: TextJustification, color: Color) = {
 
     size : Vector2;
@@ -24,17 +26,20 @@ GUI : type = {
     DrawText(text.data(), rect.x + 1, rect.y + 1, font_size, ColorBrightness(color, -0.5f));
   }
 
-  public draw : (this, config: Config) = {
-    draw_board(config);
+  public draw : (inout this, config: Config) = {
+    if (show_board)
+    {
+      draw_board(config);
+    }
   }
 
   private draw_board : (this, config: Config) = {
     size: const _ = 30;
-    iy := 0; while iy < config.colors_number next iy++
+    iy : u8 = 0; while iy < config.colors_number next iy++
     {
       DrawRectangle(-1, (iy + 1) * size, size, size, config.all_colors[iy]);
       DrawRectangle((iy + 1) * size, -1, size, size, config.all_colors[iy]);
-      ix := 0; while ix < config.colors_number next ix++
+      ix : u8 = 0; while ix < config.colors_number next ix++
       {
         x := ix * size;
         y := iy * size;
