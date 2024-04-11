@@ -1,5 +1,10 @@
 #include <raylib.h>
 
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <shared_mutex>
+
 #include "types.h2"
 #include "config.h2"
 
@@ -10,12 +15,16 @@ Cell: type = {
   color_num: u8 = 0;
   cell_iter_index: u32 = 0;
 
+  operator=: (out this, move other) = {
+    position = other.position;
+    velocity = other.velocity;
+    color_num = other.color_num;
+    cell_iter_index = other.cell_iter_index;
+  }
+
   operator=: (out this, new_x: float, new_y: float, config: Config) = {
     position = vec2<float>(new_x, new_y);
     color_num = random_value<u8>(0 as u8, config.colors_number - 1);
-  }
-
-  operator=: (out this, in that) = {
   }
 
   update: (inout this, config: Config) = {
@@ -34,19 +43,19 @@ Cell: type = {
     }
 
     cell_counter := 0; while cell_counter < cells.ssize() / 4 next cell_counter += 1 {
-      other : const _ = cells[cell_iter_index % cells.size()];
+      other := cells.at(cell_iter_index)&; // is it a reference?
       cell_iter_index = (cell_iter_index + 1) % cells.size();
 
-      if this& != other& {
-        dx := other.position.x - position.x;
-        dy := other.position.y - position.y;
+      if this& != other {
+        dx := other*.position.x - position.x;
+        dy := other*.position.y - position.y;
 
         dx = std::fmod(dx + 1.5f * window_width, window_width) - 0.5f * window_width;
         dy = std::fmod(dy + 1.5f * window_height, window_height) - 0.5f * window_height;
 
         dist := std::sqrt(dx * dx + dy * dy);
 
-        if dist < 0.001f || dist > 100.0f {
+        if dist < 0.001f || dist > 80.0f {
           continue;
         }
 
@@ -64,7 +73,7 @@ Cell: type = {
         velocity.y -= sfy;
 
         damping := 0.4f;
-        force := config.attraction_matrix[color_num][other.color_num] / damping;
+        force := config.attraction_matrix[color_num][other*.color_num] / damping;
         fx := (dx / dist2) * force;
         fy := (dy / dist2) * force;
 
@@ -78,6 +87,7 @@ Cell: type = {
       }
     }
 
+    // TODO: unique lock?
     position.x += velocity.x;
     position.y += velocity.y;
 
@@ -96,21 +106,10 @@ Cell: type = {
     if position.y > window_height {
       position.y -= window_height;
     }
-
-    if mouse_x.has_value() && mouse_y.has_value()
-    {
-      dx := mouse_x.value() - position.x;
-      dy := mouse_y.value() - position.y;
-      distance := std::sqrt(dx * dx + dy * dy);
-      force := 1 / (distance + 1);
-      velocity.x += dx * force;
-      velocity.y += dy * force;
-
-      color_num = (color_num + 1) % config.colors_number;
-    }
   }
 
   draw: (in this, config: Config) = {
+    // TODO: shared lock?
     color: Color = config.all_colors[color_num];
     DrawCircle(position.x, position.y, 2.0f, color);
   }
@@ -118,16 +117,26 @@ Cell: type = {
 
 cells: std::vector<Cell> = ();
 
-window_width: int = 800;
-window_height: int = 600;
+window_width: int = 1080;
+window_height: int = 720;
 
-mouse_x: std::optional<int> = ();
-mouse_y: std::optional<int> = ();
+running: std::atomic<bool> = true;
 
 create_random_cell: (config: Config) -> Cell = {
   rw := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width));
   rh := cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height));
   return Cell(rw as float, rh as float, config);
+}
+
+update_cells : (from: ssize_t, to: ssize_t, config: Config) -> void = {
+  while (running)
+  {
+    i := from; while i < to next i += 1 {
+      cells[i].update(config);
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(0));
+  }
 }
 
 main: () = {
@@ -142,20 +151,38 @@ main: () = {
 
   std::cout << "Hello, cppfront!\n";
 
-  cell_num := 200; while cell_num > 0 next cell_num -= 1 {    
+  cell_num := 1000; while cell_num > 0 next cell_num -= 1 {    
     cells.push_back(create_random_cell(config));
   }
 
   frame: u64 = 0;
+  num_threads : const _ = std::max(1 as ssize_t, std::thread::hardware_concurrency() - 1 as ssize_t);
+  threads: std::vector<std::thread> = ();
+
+  if (num_threads > 0)
+  {
+    i := 0 as ssize_t; while i < num_threads next i += 1 {
+      from := (cells.ssize() / num_threads) * i;
+      to := (cells.ssize() / num_threads) * (i + 1);
+      threads.push_back(std::thread(update_cells, from, to, config));
+    }
+  }
 
   while !WindowShouldClose()
   {
     frame += 1;
-    for cells do (inout cell) 
-    {
-      cell.update(config);
 
-      if frame % 100000 == 0
+    if (num_threads == 0)
+    {
+      for cells do (inout cell)
+      {
+        cell.update(config);
+      }
+    }
+
+    if (frame % 10000 == 0)
+    {
+      for cells do (in cell)
       {
         cell.print_xy();
       }
@@ -163,17 +190,6 @@ main: () = {
 
     window_width = GetRenderWidth();
     window_height = GetRenderHeight();
-
-    if !IsMouseButtonDown(MOUSE_BUTTON_LEFT)
-    {
-      mouse_x.reset();
-      mouse_y.reset();
-    } 
-    else
-    {
-      mouse_x = GetMouseX();
-      mouse_y = GetMouseY();
-    }
 
     if IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)
     {
@@ -197,6 +213,14 @@ main: () = {
 
     EndDrawing();
   }
+
+  running = false;
+
+  for threads do (inout thread) {
+    thread.join();
+  }
+
+  CloseWindow();
 }
 
 print_xy: (cell: Cell) = {

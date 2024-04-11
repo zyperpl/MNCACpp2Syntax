@@ -33,14 +33,17 @@ class GUI {
 #line 29 "gui.cpp2"
   public: auto draw(cpp2::in<Config> config) & -> void;
 
-#line 36 "gui.cpp2"
+#line 41 "gui.cpp2"
   private: auto draw_board(cpp2::in<Config> config) const& -> void;
+
+#line 65 "gui.cpp2"
+  private: [[nodiscard]] auto button(cpp2::in<std::string_view> text, cpp2::in<cpp2::i32> x, cpp2::in<cpp2::i32> y, cpp2::in<cpp2::i32> width, cpp2::in<cpp2::i32> height) const& -> bool;
   public: GUI() = default;
   public: GUI(GUI const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(GUI const&) -> void = delete;
 
 
-#line 59 "gui.cpp2"
+#line 72 "gui.cpp2"
 };
 
 
@@ -66,13 +69,18 @@ class GUI {
 
 #line 29 "gui.cpp2"
   auto GUI::draw(cpp2::in<Config> config) & -> void{
+    if ((button("Show board", 10, 10, 100, 20))) 
+    {
+      show_board = !(show_board);
+    }
+
     if ((show_board)) 
     {
       draw_board(config);
     }
   }
 
-#line 36 "gui.cpp2"
+#line 41 "gui.cpp2"
   auto GUI::draw_board(cpp2::in<Config> config) const& -> void{
     auto const size {30}; 
     cpp2::u8 iy {0}; for( ; cpp2::cmp_less(iy,config.colors_number); ++iy ) 
@@ -95,5 +103,14 @@ class GUI {
         draw_text(std::move(text), std::move(text_rect), TextJustification::Center, ColorBrightness(std::move(color), -0.1f));
       }
     }
+  }
+
+#line 65 "gui.cpp2"
+  [[nodiscard]] auto GUI::button(cpp2::in<std::string_view> text, cpp2::in<cpp2::i32> x, cpp2::in<cpp2::i32> y, cpp2::in<cpp2::i32> width, cpp2::in<cpp2::i32> height) const& -> bool{
+    auto rect {Rectangle(x, y, width, height)}; 
+    DrawRectangle(x, y, width, height, Color(200, 200, 200, 255));
+    DrawRectangleLines(x, y, width, height, Color(0, 0, 0, 255));
+    draw_text(text, rect, TextJustification::Center, Color(0, 0, 0, 255));
+    return CheckCollisionPointRec(GetMousePosition(), std::move(rect)) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON); 
   }
 
