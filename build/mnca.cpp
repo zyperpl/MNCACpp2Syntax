@@ -7,7 +7,7 @@
 
 #line 1 "mnca.cpp2"
 
-#line 11 "mnca.cpp2"
+#line 10 "mnca.cpp2"
 class Cell;
   
 
@@ -17,14 +17,13 @@ class Cell;
 #include <raylib.h>
 
 #include <thread>
-#include <atomic>
 #include <mutex>
 #include <shared_mutex>
 
 #include "types.h"
 #include "config.h"
 
-#line 11 "mnca.cpp2"
+#line 10 "mnca.cpp2"
 class Cell {
   public: vec2<float> position {0.0f, 0.0f}; 
   public: vec2<float> velocity {0.0f, 0.0f}; 
@@ -33,22 +32,22 @@ class Cell {
   private: cpp2::u32 cell_iter_index {0}; 
 
   public: explicit Cell(auto&& other);
-#line 18 "mnca.cpp2"
+#line 17 "mnca.cpp2"
   public: auto operator=(auto&& other) -> Cell& ;
 
-#line 25 "mnca.cpp2"
+#line 24 "mnca.cpp2"
   public: explicit Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config);
 
-#line 30 "mnca.cpp2"
+#line 29 "mnca.cpp2"
   public: auto update(cpp2::in<Config> config) & -> void;
 
-#line 111 "mnca.cpp2"
+#line 121 "mnca.cpp2"
   public: auto draw(cpp2::in<Config> config) const& -> void;
   public: Cell(Cell const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(Cell const&) -> void = delete;
 
 
-#line 116 "mnca.cpp2"
+#line 125 "mnca.cpp2"
 };
 
 extern std::vector<Cell> cells;
@@ -60,29 +59,29 @@ extern std::atomic<bool> running;
 
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell;
 
-#line 131 "mnca.cpp2"
+#line 140 "mnca.cpp2"
 auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config> config) -> void;
 
-#line 142 "mnca.cpp2"
+#line 151 "mnca.cpp2"
 auto main() -> int;
 
-#line 226 "mnca.cpp2"
+#line 235 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void;
 
 //=== Cpp2 function definitions =================================================
 
 #line 1 "mnca.cpp2"
 
-#line 18 "mnca.cpp2"
+#line 17 "mnca.cpp2"
   Cell::Cell(auto&& other)
     : position{ other.position }
     , velocity{ other.velocity }
     , color_num{ other.color_num }
     , cell_iter_index{ std::move(other).cell_iter_index }{
 
-#line 23 "mnca.cpp2"
+#line 22 "mnca.cpp2"
   }
-#line 18 "mnca.cpp2"
+#line 17 "mnca.cpp2"
   auto Cell::operator=(auto&& other) -> Cell& {
     position = other.position;
     velocity = other.velocity;
@@ -90,107 +89,117 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
     cell_iter_index = std::move(other).cell_iter_index;
     return *this;
 
-#line 23 "mnca.cpp2"
+#line 22 "mnca.cpp2"
   }
 
-#line 25 "mnca.cpp2"
+#line 24 "mnca.cpp2"
   Cell::Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config)
     : position{ vec2<float>(new_x, new_y) }
     , color_num{ random_value<cpp2::u8>(cpp2::as_<cpp2::u8, 0>(), config.colors_number - 1) }{
 
-#line 28 "mnca.cpp2"
+#line 27 "mnca.cpp2"
   }
 
-#line 30 "mnca.cpp2"
+#line 29 "mnca.cpp2"
   auto Cell::update(cpp2::in<Config> config) & -> void{
     auto friction {0.8f}; 
     auto gravity {0.0f}; 
 
-    velocity.x *= friction;
-    velocity.y *= std::move(friction);
-    velocity.y += std::move(gravity);
+    auto vx {CPP2_UFCS(load)(velocity.x)}; 
+    auto vy {CPP2_UFCS(load)(velocity.y)}; 
 
-    auto vel_len {std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y)}; 
+    vx *= friction;
+    vy *= std::move(friction);
+    vy += std::move(gravity);
+
+    auto vel_len {std::sqrt(vx * vx + vy * vy)}; 
     auto const max_vel_len {1.0f}; 
     if (cpp2::cmp_greater(vel_len,max_vel_len)) {
-      velocity.x *= max_vel_len / vel_len;
-      velocity.y *= std::move(max_vel_len) / std::move(vel_len);
+      vx *= max_vel_len / vel_len;
+      vy *= std::move(max_vel_len) / std::move(vel_len);
     }
+
+    auto px {CPP2_UFCS(load)(position.x)}; 
+    auto py {CPP2_UFCS(load)(position.y)}; 
 
     auto cell_counter {0}; for( ; cpp2::cmp_less(cell_counter,CPP2_UFCS(ssize)(cells) / 4); cell_counter += 1 ) {
-      auto other {&CPP2_UFCS(at)(cells, cell_iter_index)}; // is it a reference?
+      Cell* other {std::addressof(CPP2_UFCS(at)(cells, cell_iter_index))}; 
       cell_iter_index = (cell_iter_index + 1) % CPP2_UFCS(size)(cells);
 
-      if (&(*this) != other) {
-        auto dx {(*cpp2::assert_not_null(other)).position.x - position.x}; 
-        auto dy {(*cpp2::assert_not_null(other)).position.y - position.y}; 
-
-        dx = std::fmod(dx + 1.5f * window_width, window_width) - 0.5f * window_width;
-        dy = std::fmod(dy + 1.5f * window_height, window_height) - 0.5f * window_height;
-
-        auto dist {std::sqrt(dx * dx + dy * dy)}; 
-
-        if (cpp2::cmp_less(dist,0.001f) || cpp2::cmp_greater(dist,80.0f)) {
-          continue;
-        }
-
-        // might have some calculation bugs
-        auto dist2 {dist * dist}; 
-
-        auto sfx {dx / (dist2)}; 
-        auto sfy {dy / (dist2)}; 
-
-        auto const separation_max {0.8f}; 
-        sfx = std::clamp(sfx, -separation_max, separation_max);
-        sfy = std::clamp(sfy, -separation_max, std::move(separation_max));
-
-        velocity.x -= std::move(sfx);
-        velocity.y -= std::move(sfy);
-
-        auto damping {0.4f}; 
-        auto force {config.attraction_matrix[color_num][(*cpp2::assert_not_null(std::move(other))).color_num] / std::move(damping)}; 
-        auto fx {(std::move(dx) / dist2) * force}; 
-        auto fy {(std::move(dy) / std::move(dist2)) * std::move(force)}; 
-
-        auto const force_max {0.1f}; 
-        fx = std::clamp(fx, -force_max, force_max);
-        fy = std::clamp(fy, -force_max, std::move(force_max));
-
-        velocity.x += std::move(fx);
-        velocity.y += std::move(fy);
-
+      if (&(*this) == other) {
+        continue;
       }
+
+      auto other_px {CPP2_UFCS(load)((*cpp2::assert_not_null(other)).position.x)}; 
+      auto other_py {CPP2_UFCS(load)((*cpp2::assert_not_null(other)).position.y)}; 
+
+      auto dx {std::move(other_px) - px}; 
+      auto dy {std::move(other_py) - py}; 
+
+      dx = std::fmod(dx + 1.5f * window_width, window_width) - 0.5f * window_width;
+      dy = std::fmod(dy + 1.5f * window_height, window_height) - 0.5f * window_height;
+
+      auto dist {std::sqrt(dx * dx + dy * dy)}; 
+
+      if (cpp2::cmp_less(dist,0.001f) || cpp2::cmp_greater(dist,90.0f)) {
+        continue;
+      }
+
+      auto dist2 {dist * dist}; 
+
+      auto sfx {dx / (dist2)}; 
+      auto sfy {dy / (dist2)}; 
+
+      auto const separation_max {0.4f}; 
+      sfx = std::clamp(sfx, -separation_max, separation_max);
+      sfy = std::clamp(sfy, -separation_max, std::move(separation_max));
+
+      vx -= std::move(sfx);
+      vy -= std::move(sfy);
+
+      auto damping {0.9f}; 
+      auto force {config.attraction_matrix[color_num][(*cpp2::assert_not_null(std::move(other))).color_num] / std::move(damping)}; 
+      auto fx {(std::move(dx) / dist2) * force}; 
+      auto fy {(std::move(dy) / std::move(dist2)) * std::move(force)}; 
+
+      auto const force_max {0.5f}; 
+      fx = std::clamp(fx, -force_max, force_max);
+      fy = std::clamp(fy, -force_max, std::move(force_max));
+
+      vx += std::move(fx);
+      vy += std::move(fy);
     }
 
-    // TODO: unique lock?
-    position.x += velocity.x;
-    position.y += velocity.y;
+    px += std::move(vx);
+    py += std::move(vy);
 
-    if (cpp2::cmp_less(position.x,0)) {
-      position.x += window_width;
+    if (cpp2::cmp_less(px,0)) {
+      px += window_width;
     }
 
-    if (cpp2::cmp_greater(position.x,window_width)) {
-      position.x -= window_width;
+    if (cpp2::cmp_greater(px,window_width)) {
+      px -= window_width;
     }
 
-    if (cpp2::cmp_less(position.y,0)) {
-      position.y += window_height;
+    if (cpp2::cmp_less(py,0)) {
+      py += window_height;
     }
 
-    if (cpp2::cmp_greater(position.y,window_height)) {
-      position.y -= window_height;
+    if (cpp2::cmp_greater(py,window_height)) {
+      py -= window_height;
     }
+
+    CPP2_UFCS(store)(position.x, std::move(px));
+    CPP2_UFCS(store)(position.y, std::move(py));
   }
 
-#line 111 "mnca.cpp2"
+#line 121 "mnca.cpp2"
   auto Cell::draw(cpp2::in<Config> config) const& -> void{
-    // TODO: shared lock?
-    Color color {config.all_colors[color_num]}; 
-    DrawCircle(position.x, position.y, 2.0f, std::move(color));
+    auto color {config.all_colors[color_num]}; 
+    DrawCircle(position.x, position.y, 3.0f, std::move(color));
   }
 
-#line 118 "mnca.cpp2"
+#line 127 "mnca.cpp2"
 std::vector<Cell> cells {}; 
 
 int window_width {1080}; 
@@ -198,14 +207,14 @@ int window_height {720};
 
 std::atomic<bool> running {true}; 
 
-#line 125 "mnca.cpp2"
+#line 134 "mnca.cpp2"
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell{
   auto rw {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width))}; 
   auto rh {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height))}; 
   return Cell(cpp2::as_<float>(std::move(rw)), cpp2::as_<float>(std::move(rh)), config); 
 }
 
-#line 131 "mnca.cpp2"
+#line 140 "mnca.cpp2"
 auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config> config) -> void{
   while( (running) ) 
   {
@@ -217,10 +226,10 @@ auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config>
   }
 }
 
-#line 142 "mnca.cpp2"
+#line 151 "mnca.cpp2"
 auto main() -> int{
   auto window_name {"Hello, cppfront"}; 
-  InitWindow(window_width, window_height, std::move(window_name));
+  InitWindow(window_width, window_height, window_name);
   SetTargetFPS(170);
 
   auto config {Config()}; 
@@ -228,7 +237,7 @@ auto main() -> int{
 
   config.attraction_matrix = CPP2_UFCS(generate_attraction_matrix)(config, config.colors_number);
 
-  std::cout << "Hello, cppfront!\n";
+  std::cout << std::move(window_name) << "\n";
 
   auto cell_num {1000}; for( ; cpp2::cmp_greater(cell_num,0); cell_num -= 1 ) {
     CPP2_UFCS(push_back)(cells, create_random_cell(config));
@@ -302,7 +311,7 @@ auto main() -> int{
   CloseWindow();
 }
 
-#line 226 "mnca.cpp2"
+#line 235 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void{
   std::cout << "cell.position = " << cell.position << "\n";
 }

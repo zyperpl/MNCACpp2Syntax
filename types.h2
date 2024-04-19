@@ -1,15 +1,20 @@
+#include <atomic>
+
 vec2: <T> type = {
-  public x: T;
-  public y: T;
+  public x: std::atomic<T>;
+  public y: std::atomic<T>;
 
   operator=: (out this, new_x: T, new_y: T) = {
-    this.x = new_x;
-    this.y = new_y;
+    this.x = std::atomic<T>(new_x);
+    this.y = std::atomic<T>(new_y);
   }
 
   operator=: (out this, in that) = {
-    this.x = that.x;
-    this.y = that.y;
+    this.x = std::atomic<T>();
+    this.y = std::atomic<T>();
+
+    this.x.store(that.x.load());
+    this.y.store(that.y.load());
   }
 }
 

@@ -1,7 +1,6 @@
 #include <raylib.h>
 
 #include <thread>
-#include <atomic>
 #include <mutex>
 #include <shared_mutex>
 
@@ -31,87 +30,97 @@ Cell: type = {
     friction := 0.8f;
     gravity := 0.0f;
 
-    velocity.x *= friction;
-    velocity.y *= friction;
-    velocity.y += gravity;
+    vx := velocity.x.load();
+    vy := velocity.y.load();
 
-    vel_len := std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    vx *= friction;
+    vy *= friction;
+    vy += gravity;
+
+    vel_len := std::sqrt(vx * vx + vy * vy);
     max_vel_len : const _ = 1.0f;
     if vel_len > max_vel_len {
-      velocity.x *= max_vel_len / vel_len;
-      velocity.y *= max_vel_len / vel_len;
+      vx *= max_vel_len / vel_len;
+      vy *= max_vel_len / vel_len;
     }
+
+    px := position.x.load();
+    py := position.y.load();
 
     cell_counter := 0; while cell_counter < cells.ssize() / 4 next cell_counter += 1 {
-      other := cells.at(cell_iter_index)&; // is it a reference?
+      other : *Cell = std::addressof(cells.at(cell_iter_index));
       cell_iter_index = (cell_iter_index + 1) % cells.size();
 
-      if this& != other {
-        dx := other*.position.x - position.x;
-        dy := other*.position.y - position.y;
-
-        dx = std::fmod(dx + 1.5f * window_width, window_width) - 0.5f * window_width;
-        dy = std::fmod(dy + 1.5f * window_height, window_height) - 0.5f * window_height;
-
-        dist := std::sqrt(dx * dx + dy * dy);
-
-        if dist < 0.001f || dist > 80.0f {
-          continue;
-        }
-
-        // might have some calculation bugs
-        dist2 := dist * dist;
-
-        sfx := dx / (dist2); 
-        sfy := dy / (dist2); 
-
-        separation_max : const _ = 0.8f;
-        sfx = std::clamp(sfx, -separation_max, separation_max);
-        sfy = std::clamp(sfy, -separation_max, separation_max);
-
-        velocity.x -= sfx;
-        velocity.y -= sfy;
-
-        damping := 0.4f;
-        force := config.attraction_matrix[color_num][other*.color_num] / damping;
-        fx := (dx / dist2) * force;
-        fy := (dy / dist2) * force;
-
-        force_max : const _ = 0.1f;
-        fx = std::clamp(fx, -force_max, force_max);
-        fy = std::clamp(fy, -force_max, force_max);
-            
-        velocity.x += fx;
-        velocity.y += fy;
-
+      if this& == other {
+        continue;
       }
+
+      other_px := other*.position.x.load();
+      other_py := other*.position.y.load();
+
+      dx := other_px - px;
+      dy := other_py - py;
+
+      dx = std::fmod(dx + 1.5f * window_width, window_width) - 0.5f * window_width;
+      dy = std::fmod(dy + 1.5f * window_height, window_height) - 0.5f * window_height;
+
+      dist := std::sqrt(dx * dx + dy * dy);
+
+      if dist < 0.001f || dist > 90.0f {
+        continue;
+      }
+
+      dist2 := dist * dist;
+
+      sfx := dx / (dist2);
+      sfy := dy / (dist2); 
+
+      separation_max : const _ = 0.4f;
+      sfx = std::clamp(sfx, -separation_max, separation_max);
+      sfy = std::clamp(sfy, -separation_max, separation_max);
+
+      vx -= sfx;
+      vy -= sfy;
+
+      damping := 0.9f;
+      force := config.attraction_matrix[color_num][other*.color_num] / damping;
+      fx := (dx / dist2) * force;
+      fy := (dy / dist2) * force;
+
+      force_max : const _ = 0.5f;
+      fx = std::clamp(fx, -force_max, force_max);
+      fy = std::clamp(fy, -force_max, force_max);
+          
+      vx += fx;
+      vy += fy;
     }
 
-    // TODO: unique lock?
-    position.x += velocity.x;
-    position.y += velocity.y;
+    px += vx;
+    py += vy;
 
-    if position.x < 0 {
-      position.x += window_width;
+    if px < 0 {
+      px += window_width;
     }
 
-    if position.x > window_width {
-      position.x -= window_width;
+    if px > window_width {
+      px -= window_width;
     }
 
-    if position.y < 0 {
-      position.y += window_height;
+    if py < 0 {
+      py += window_height;
     }
 
-    if position.y > window_height {
-      position.y -= window_height;
+    if py > window_height {
+      py -= window_height;
     }
+
+    position.x.store(px);
+    position.y.store(py);
   }
 
   draw: (in this, config: Config) = {
-    // TODO: shared lock?
-    color: Color = config.all_colors[color_num];
-    DrawCircle(position.x, position.y, 2.0f, color);
+    color := config.all_colors[color_num];
+    DrawCircle(position.x, position.y, 3.0f, color);
   }
 }
 
@@ -149,7 +158,7 @@ main: () = {
 
   config.attraction_matrix = config.generate_attraction_matrix(config.colors_number);
 
-  std::cout << "Hello, cppfront!\n";
+  std::cout << window_name << "\n";
 
   cell_num := 1000; while cell_num > 0 next cell_num -= 1 {    
     cells.push_back(create_random_cell(config));

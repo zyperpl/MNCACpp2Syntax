@@ -9,7 +9,7 @@ create_dirs:
 	mkdir -p $(OUT_DIR)
 
 mnca: $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp build.cpp $(CPPFRONT) raylib
-	$(CXX) $(CXXFLAGS) -fsanitize=thread -I $(OUT_DIR) -o $(OUT_DIR)/mnca build.cpp -I raylib/src -L raylib/src -l raylib -lm
+	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca build.cpp -I raylib/src -L raylib/src -l raylib -lm
 
 $(OUT_DIR)/gui.cpp: $(CPPFRONT) gui.cpp2 $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
 	$(CPPFRONT) -o $(OUT_DIR)/gui.cpp gui.cpp2

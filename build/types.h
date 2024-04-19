@@ -9,34 +9,37 @@
 #include "cpp2util.h"
 
 #line 1 "types.h2"
+
+#line 3 "types.h2"
 template<typename T> class vec2;
-#line 2 "types.h2"
   
 
-#line 22 "types.h2"
+#line 27 "types.h2"
 class TextJustification;
   
 
 //=== Cpp2 type definitions and function declarations ===========================
 
 #line 1 "types.h2"
+#include <atomic>
+
+#line 3 "types.h2"
 template<typename T> class vec2 {
-#line 2 "types.h2"
-  public: T x; 
-  public: T y; 
+  public: std::atomic<T> x; 
+  public: std::atomic<T> y; 
 
   public: explicit vec2(T const& new_x, T const& new_y);
 
-#line 10 "types.h2"
+#line 12 "types.h2"
   public: vec2(vec2 const& that);
-#line 10 "types.h2"
+#line 12 "types.h2"
   public: auto operator=(vec2 const& that) -> vec2& ;
-#line 10 "types.h2"
+#line 12 "types.h2"
   public: vec2(vec2&& that) noexcept;
-#line 10 "types.h2"
+#line 12 "types.h2"
   public: auto operator=(vec2&& that) noexcept -> vec2& ;
 
-#line 14 "types.h2"
+#line 19 "types.h2"
 };
 
 template<typename T>
@@ -61,7 +64,7 @@ public: constexpr auto operator=(TextJustification&& that) noexcept -> TextJusti
 public: [[nodiscard]] auto operator<=>(TextJustification const& that) const& -> std::strong_ordering = default;
 public: [[nodiscard]] auto to_string() const& -> std::string;
 
-#line 26 "types.h2"
+#line 31 "types.h2"
 };
 
 
@@ -69,43 +72,53 @@ public: [[nodiscard]] auto to_string() const& -> std::string;
 
 #line 1 "types.h2"
 
-#line 5 "types.h2"
+#line 7 "types.h2"
   template <typename T> vec2<T>::vec2(T const& new_x, T const& new_y)
-    : x{ new_x }
-    , y{ new_y }{
-
-#line 8 "types.h2"
-  }
+    : x{ std::atomic<T>(new_x) }
+    , y{ std::atomic<T>(new_y) }{
 
 #line 10 "types.h2"
+  }
+
+#line 12 "types.h2"
   template <typename T> vec2<T>::vec2(vec2 const& that)
-    : x{ that.x }
-    , y{ that.y }{
+    : x{ std::atomic<T>() }
+    , y{ std::atomic<T>() }{
 
-#line 13 "types.h2"
+#line 16 "types.h2"
+    CPP2_UFCS(store)((*this).x, CPP2_UFCS(load)(that.x));
+    CPP2_UFCS(store)((*this).y, CPP2_UFCS(load)(that.y));
   }
-#line 10 "types.h2"
+#line 12 "types.h2"
   template <typename T> auto vec2<T>::operator=(vec2 const& that) -> vec2& {
-    x = that.x;
-    y = that.y;
-    return *this;
+    x = std::atomic<T>();
+    y = std::atomic<T>();
 
-#line 13 "types.h2"
+#line 16 "types.h2"
+    CPP2_UFCS(store)((*this).x, CPP2_UFCS(load)(that.x));
+    CPP2_UFCS(store)((*this).y, CPP2_UFCS(load)(that.y));
+    return *this;
+#line 18 "types.h2"
   }
-#line 10 "types.h2"
+#line 12 "types.h2"
   template <typename T> vec2<T>::vec2(vec2&& that) noexcept
-    : x{ std::move(that).x }
-    , y{ std::move(that).y }{
+    : x{ std::atomic<T>() }
+    , y{ std::atomic<T>() }{
 
-#line 13 "types.h2"
+#line 16 "types.h2"
+    CPP2_UFCS(store)((*this).x, CPP2_UFCS(load)(std::move(that).x));
+    CPP2_UFCS(store)((*this).y, CPP2_UFCS(load)(std::move(that).y));
   }
-#line 10 "types.h2"
+#line 12 "types.h2"
   template <typename T> auto vec2<T>::operator=(vec2&& that) noexcept -> vec2& {
-    x = std::move(that).x;
-    y = std::move(that).y;
-    return *this;
+    x = std::atomic<T>();
+    y = std::atomic<T>();
 
-#line 13 "types.h2"
+#line 16 "types.h2"
+    CPP2_UFCS(store)((*this).x, CPP2_UFCS(load)(std::move(that).x));
+    CPP2_UFCS(store)((*this).y, CPP2_UFCS(load)(std::move(that).y));
+    return *this;
+#line 18 "types.h2"
   }
 
 
