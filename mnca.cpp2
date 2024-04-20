@@ -248,7 +248,7 @@ main: () = {
     }
 
     BeginDrawing();
-    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.1f));
+    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.6f));
     //DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for cells do (in cell) {

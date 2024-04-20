@@ -327,7 +327,7 @@ auto main() -> int{
     }
 
     BeginDrawing();
-    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.1f));
+    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.6f));
     //DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for ( auto const& cell : cells ) {
