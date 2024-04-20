@@ -26,7 +26,7 @@ Cell: type = {
     color_num = random_value<u8>(0 as u8, config.colors_number - 1);
   }
 
-  update: (inout this, config: Config) = {
+  update: (inout this, in config: Config) = {
     friction := 0.8f;
     gravity := 0.0f;
 
@@ -118,7 +118,7 @@ Cell: type = {
     position.y.store(py);
   }
 
-  draw: (in this, config: Config) = {
+  draw: (in this, in config: Config) = {
     color := config.all_colors[color_num];
     DrawCircle(position.x, position.y, 3.0f, color);
   }
@@ -148,9 +148,11 @@ update_cells : (from: ssize_t, to: ssize_t, config: Config) -> void = {
   }
 }
 
+window_name : const std::string_view == "Hello, cppfront!";
+max_cells : const u64 == 65536;
+
 main: () = {
-  window_name := "Hello, cppfront";
-  InitWindow(window_width, window_height, window_name);
+  InitWindow(window_width, window_height, window_name.data());
   SetTargetFPS(170);
 
   config := Config();
@@ -158,8 +160,10 @@ main: () = {
 
   config.attraction_matrix = config.generate_attraction_matrix(config.colors_number);
 
-  std::cout << window_name << "\n";
+  std::cout << "Window title is '(window_name)$'.\n";
+  std::cout << "Size of a cell is (sizeof(Cell))$ bytes.\n";
 
+  cells.reserve(max_cells);
   cell_num := 1000; while cell_num > 0 next cell_num -= 1 {    
     cells.push_back(create_random_cell(config));
   }
@@ -167,14 +171,35 @@ main: () = {
   frame: u64 = 0;
   num_threads : const _ = std::max(1 as ssize_t, std::thread::hardware_concurrency() - 1 as ssize_t);
   threads: std::vector<std::thread> = ();
+  threads_cells : u64 = 0;
+
+  delegate_threads := :() = {
+    running&$* = true;
+    i := 0 as ssize_t; while i < num_threads$ next i += 1 {
+      cells_size := cells&$*.ssize();
+      from := (cells_size / num_threads$) * i;
+      to := (cells_size / num_threads$) * (i + 1);
+      if i == num_threads$ - 1 {
+        to = cells_size;
+      }
+
+      threads&$*.push_back(std::thread(update_cells, from, to, config$));
+
+      threads_cells&$* = cells_size;
+    }
+  };
+
+  stop_threads := :() = {
+    running&$* = false;
+    for threads&$* do (inout thread) {
+      thread.join();
+    }
+    threads&$*.clear();
+  };
 
   if (num_threads > 0)
   {
-    i := 0 as ssize_t; while i < num_threads next i += 1 {
-      from := (cells.ssize() / num_threads) * i;
-      to := (cells.ssize() / num_threads) * (i + 1);
-      threads.push_back(std::thread(update_cells, from, to, config));
-    }
+    delegate_threads();
   }
 
   while !WindowShouldClose()
@@ -200,20 +225,31 @@ main: () = {
     window_width = GetRenderWidth();
     window_height = GetRenderHeight();
 
-    if IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)
+    if cells.size() < max_cells
     {
-      cells.push_back(create_random_cell(config));
-    }
+      if IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)
+      {
+        cells.push_back(create_random_cell(config));
+      }
 
-    if IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
-    {
-      cell := Cell(cpp2::unsafe_narrow<float>(GetMouseX()), cpp2::unsafe_narrow<float>(GetMouseY()), config);
-      cells.push_back(cell);
+      if IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
+      {
+        mx := GetMouseX();
+        my := GetMouseY();
+        cell := Cell(mx, my, config);
+        cells.push_back(cell);
+      }
+      
+      if threads_cells != cells.size()
+      {
+        stop_threads();
+        delegate_threads();
+      }
     }
 
     BeginDrawing();
-    //DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
-    DrawRectangle(0, 0, window_width, window_height, BLACK);
+    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.1f));
+    //DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for cells do (in cell) {
       cell.draw(config);
@@ -222,12 +258,8 @@ main: () = {
 
     EndDrawing();
   }
-
-  running = false;
-
-  for threads do (inout thread) {
-    thread.join();
-  }
+  
+  stop_threads();
 
   CloseWindow();
 }

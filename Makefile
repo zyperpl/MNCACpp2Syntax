@@ -29,7 +29,7 @@ $(OUT_DIR)/config.h: $(CPPFRONT) config.h2
 $(CPPFRONT):
 	test -d cppfront || git clone https://github.com/hsutter/cppfront cppfront
 	cd cppfront && git reset --hard d59ef7c
-	$(CXX) -std=c++20 -o $(CPPFRONT) cppfront/source/cppfront.cpp
+	$(CXX) -std=c++20 -O3 -o $(CPPFRONT) cppfront/source/cppfront.cpp
 
 raylib:
 	git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib

@@ -63,9 +63,12 @@ extern std::atomic<bool> running;
 auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config> config) -> void;
 
 #line 151 "mnca.cpp2"
+std::string_view const inline constexpr window_name = "Hello, cppfront!";
+cpp2::u64 const inline constexpr max_cells = 65536;
+
 auto main() -> int;
 
-#line 235 "mnca.cpp2"
+#line 267 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void;
 
 //=== Cpp2 function definitions =================================================
@@ -226,10 +229,9 @@ auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config>
   }
 }
 
-#line 151 "mnca.cpp2"
+#line 154 "mnca.cpp2"
 auto main() -> int{
-  auto window_name {"Hello, cppfront"}; 
-  InitWindow(window_width, window_height, window_name);
+  InitWindow(window_width, window_height, CPP2_UFCS(data)(window_name));
   SetTargetFPS(170);
 
   auto config {Config()}; 
@@ -237,8 +239,10 @@ auto main() -> int{
 
   config.attraction_matrix = CPP2_UFCS(generate_attraction_matrix)(config, config.colors_number);
 
-  std::cout << std::move(window_name) << "\n";
+  std::cout << ("Window title is '" + cpp2::to_string(window_name) + "'.\n");
+  std::cout << ("Size of a cell is " + cpp2::to_string(sizeof(Cell)) + " bytes.\n");
 
+  CPP2_UFCS(reserve)(cells, max_cells);
   auto cell_num {1000}; for( ; cpp2::cmp_greater(cell_num,0); cell_num -= 1 ) {
     CPP2_UFCS(push_back)(cells, create_random_cell(config));
   }
@@ -246,14 +250,35 @@ auto main() -> int{
   cpp2::u64 frame {0}; 
   auto const num_threads {std::max(cpp2::as_<ssize_t, 1>(), std::thread::hardware_concurrency() - cpp2::as_<ssize_t, 1>())}; 
   std::vector<std::thread> threads {}; 
+  cpp2::u64 threads_cells {0}; 
+
+  auto delegate_threads {[_0 = (&running), _1 = num_threads, _2 = (&cells), _6 = (&threads), _7 = config, _8 = (&threads_cells)]() mutable -> void{
+    *cpp2::assert_not_null(_0) = true;
+    auto i {cpp2::as_<ssize_t, 0>()}; for( ; cpp2::cmp_less(i,_1); i += 1 ) {
+      auto cells_size {CPP2_UFCS(ssize)((*cpp2::assert_not_null(_2)))}; 
+      auto from {(cells_size / _1) * i}; 
+      auto to {(cells_size / _1) * (i + 1)}; 
+      if (i == _1 - 1) {
+        to = cells_size;
+      }
+
+      CPP2_UFCS(push_back)((*cpp2::assert_not_null(_6)), std::thread(update_cells, std::move(from), std::move(to), _7));
+
+      *cpp2::assert_not_null(_8) = std::move(cells_size);
+    }
+  }}; 
+
+  auto stop_threads {[_0 = (&running), _1 = (&threads)]() mutable -> void{
+    *cpp2::assert_not_null(_0) = false;
+    for ( auto& thread : *cpp2::assert_not_null(_1) ) {
+      CPP2_UFCS(join)(thread);
+    }
+    CPP2_UFCS(clear)((*cpp2::assert_not_null(_1)));
+  }}; 
 
   if ((cpp2::cmp_greater(num_threads,0))) 
   {
-    auto i {cpp2::as_<ssize_t, 0>()}; for( ; cpp2::cmp_less(i,num_threads); i += 1 ) {
-      auto from {(CPP2_UFCS(ssize)(cells) / num_threads) * i}; 
-      auto to {(CPP2_UFCS(ssize)(cells) / num_threads) * (i + 1)}; 
-      CPP2_UFCS(push_back)(threads, std::thread(update_cells, std::move(from), std::move(to), config));
-    }
+    delegate_threads();
   }
 
   while( !(WindowShouldClose()) ) 
@@ -279,20 +304,31 @@ auto main() -> int{
     window_width = GetRenderWidth();
     window_height = GetRenderHeight();
 
-    if (IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)) 
+    if (cpp2::cmp_less(CPP2_UFCS(size)(cells),max_cells)) 
     {
-      CPP2_UFCS(push_back)(cells, create_random_cell(config));
-    }
+      if (IsKeyDown(KEY_R) || IsKeyDown(KEY_SPACE)) 
+      {
+        CPP2_UFCS(push_back)(cells, create_random_cell(config));
+      }
 
-    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
-    {
-      auto cell {Cell(cpp2::unsafe_narrow<float>(GetMouseX()), cpp2::unsafe_narrow<float>(GetMouseY()), config)}; 
-      CPP2_UFCS(push_back)(cells, std::move(cell));
+      if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
+      {
+        auto mx {GetMouseX()}; 
+        auto my {GetMouseY()}; 
+        auto cell {Cell(std::move(mx), std::move(my), config)}; 
+        CPP2_UFCS(push_back)(cells, std::move(cell));
+      }
+
+      if (threads_cells != CPP2_UFCS(size)(cells)) 
+      {
+        stop_threads();
+        delegate_threads();
+      }
     }
 
     BeginDrawing();
-    //DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.5f));
-    DrawRectangle(0, 0, window_width, window_height, BLACK);
+    DrawRectangle(0, 0, window_width, window_height, ColorAlpha(BLACK, 0.1f));
+    //DrawRectangle(0, 0, window_width, window_height, BLACK);
 
     for ( auto const& cell : cells ) {
       CPP2_UFCS(draw)(cell, config);
@@ -302,16 +338,12 @@ auto main() -> int{
     EndDrawing();
   }
 
-  running = false;
-
-  for ( auto& thread : std::move(threads) ) {
-    CPP2_UFCS(join)(thread);
-  }
+  std::move(stop_threads)();
 
   CloseWindow();
 }
 
-#line 235 "mnca.cpp2"
+#line 267 "mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void{
   std::cout << "cell.position = " << cell.position << "\n";
 }
