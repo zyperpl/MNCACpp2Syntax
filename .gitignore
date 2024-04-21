@@ -7,3 +7,6 @@ build/*.hpp
 callgrind.out.*
 massif.out.*
 build/mnca
+build/mnca.exe
+build/font_data.h
+src/font_data.h2

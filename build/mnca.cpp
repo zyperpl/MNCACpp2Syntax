@@ -68,7 +68,7 @@ cpp2::u64 const inline constexpr max_cells = 65536;
 
 auto main() -> int;
 
-#line 267 "src/mnca.cpp2"
+#line 268 "src/mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void;
 
 //=== Cpp2 function definitions =================================================
@@ -231,6 +231,7 @@ auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config>
 
 #line 154 "src/mnca.cpp2"
 auto main() -> int{
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(window_width, window_height, CPP2_UFCS(data)(window_name));
   SetTargetFPS(170);
 
@@ -343,7 +344,7 @@ auto main() -> int{
   CloseWindow();
 }
 
-#line 267 "src/mnca.cpp2"
+#line 268 "src/mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void{
   std::cout << "cell.position = " << cell.position << "\n";
 }

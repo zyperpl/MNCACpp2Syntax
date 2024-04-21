@@ -1,0 +1,9 @@
+#include <raylib.h>
+
+#include "font_data.h2"
+
+load_font : () -> Font = {
+  font_data := get_Inter_SemiBold_data(); 
+  file_ext := ".ttf";
+  return LoadFontFromMemory(file_ext, font_data.data(), font_data.size(), 16, nullptr, 0);
+}

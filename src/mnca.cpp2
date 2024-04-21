@@ -152,6 +152,7 @@ window_name : const std::string_view == "Hello, cppfront!";
 max_cells : const u64 == 65536;
 
 main: () = {
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(window_width, window_height, window_name.data());
   SetTargetFPS(170);
 

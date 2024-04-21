@@ -1,0 +1,70 @@
+#include <raylib.h>
+
+is_allowed_character : (c : char) -> bool = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+
+main : (args) -> int = {
+  if args.argc <= 1 {
+    std::cerr << "Provide file name:\n(args.argv[0])$ <file>\n";
+    return 1;
+  }
+
+  file_name := args.argv[1];
+
+  if !FileExists(file_name) {
+    std::cerr << "File (file_name)$ doesn't exist!\n";
+    return 2;
+  }
+
+  SetTraceLogLevel(LOG_NONE);
+  data_size : int = -1;
+  data := LoadFileData(file_name, data_size&);
+
+  if data_size == -1 {
+    std::cerr << "Failed to load file (file_name)$!\n";
+    return 3;
+  }
+
+  var_name_cstr := GetFileNameWithoutExt(file_name);
+  var_name_len := TextLength(var_name_cstr);
+  var_name := std::string(var_name_cstr, var_name_len);
+  {
+    for var_name do (inout ch) {
+      if !is_allowed_character(ch) {
+        ch = '_';
+      }
+    }
+  }
+
+  compressed_data_size : int = -1;
+  compressed_data := CompressData(data, data_size, compressed_data_size&);
+
+  {
+    std::cout << "// Compressed data for file (file_name)$\n";
+    std::cout << "file_(var_name)$_data : std::array<u8, (compressed_data_size)$> == (\n";
+    i := 0; while i < compressed_data_size next i++ {
+      std::cout << "0x";
+      std::cout << std::hex << compressed_data[i] as int;
+      if i < compressed_data_size - 1 {
+        std::cout << ", ";
+      } 
+      if i % 20 == 0 {
+        std::cout << "\n";
+      }
+    }
+    std::cout << ");\n\n";
+  }
+
+  std::cout << "get_(var_name)$_data : () -> std::vector<u8> = {\n";
+  std::cout << "  comp_size : const int = (compressed_data_size)$;\n";
+  std::cout << "  decompressed_data := std::vector<u8>(comp_size * 3);\n";
+  std::cout << "  data_size : int = -1;\n";
+  std::cout << "  data := DecompressData(file_(var_name)$_data.data(), comp_size, data_size&);\n";
+  std::cout << "  decompressed_data.resize(data_size);\n";
+  std::cout << "  std::copy(data, data + data_size, decompressed_data.begin());\n";
+  std::cout << "  return decompressed_data;\n";
+  std::cout << "}\n";
+
+  std::cerr << "Generated function: get_(var_name)$_data()\n";
+
+  return 0;
+}
