@@ -1,30 +1,31 @@
-CXXFLAGS = -std=c++20 -Wall -Wextra -pedantic -O3 -march=native -I cppfront/source -ggdb
+CXXFLAGS = -std=c++20 -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -O3 -march=native -I cppfront/source -ggdb
 
 CPPFRONT = cppfront/cppfront
 OUT_DIR = build
+SRC_DIR = src
 
 all: create_dirs mnca
 
 create_dirs: 
 	mkdir -p $(OUT_DIR)
 
-mnca: $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp build.cpp $(CPPFRONT) raylib
-	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca build.cpp -I raylib/src -L raylib/src -l raylib -lm
+mnca: $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp $(SRC_DIR)/build.cpp $(CPPFRONT) raylib
+	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca $(SRC_DIR)/build.cpp -I raylib/src -L raylib/src -l raylib -lm
 
-$(OUT_DIR)/gui.cpp: $(CPPFRONT) gui.cpp2 $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
-	$(CPPFRONT) -o $(OUT_DIR)/gui.cpp gui.cpp2
+$(OUT_DIR)/gui.cpp: $(CPPFRONT) $(SRC_DIR)/gui.cpp2 $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
+	$(CPPFRONT) -o $(OUT_DIR)/gui.cpp $(SRC_DIR)/gui.cpp2
 
-$(OUT_DIR)/mnca.cpp: $(CPPFRONT) mnca.cpp2 $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
-	$(CPPFRONT) -no-subscript-checks -o $(OUT_DIR)/mnca.cpp mnca.cpp2
+$(OUT_DIR)/mnca.cpp: $(CPPFRONT) $(SRC_DIR)/mnca.cpp2 $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
+	$(CPPFRONT) -no-subscript-checks -o $(OUT_DIR)/mnca.cpp $(SRC_DIR)/mnca.cpp2
 
-$(OUT_DIR)/types.h: $(CPPFRONT) types.h2
-	$(CPPFRONT) -o $(OUT_DIR)/types.h types.h2
+$(OUT_DIR)/types.h: $(CPPFRONT) $(SRC_DIR)/types.h2
+	$(CPPFRONT) -o $(OUT_DIR)/types.h $(SRC_DIR)/types.h2
 
-$(OUT_DIR)/utils.h: $(CPPFRONT) utils.h2
-	$(CPPFRONT) -o $(OUT_DIR)/utils.h utils.h2
+$(OUT_DIR)/utils.h: $(CPPFRONT) $(SRC_DIR)/utils.h2
+	$(CPPFRONT) -o $(OUT_DIR)/utils.h $(SRC_DIR)/utils.h2
 
-$(OUT_DIR)/config.h: $(CPPFRONT) config.h2
-	$(CPPFRONT) -o $(OUT_DIR)/config.h config.h2
+$(OUT_DIR)/config.h: $(CPPFRONT) $(SRC_DIR)/config.h2
+	$(CPPFRONT) -o $(OUT_DIR)/config.h $(SRC_DIR)/config.h2
 
 $(CPPFRONT):
 	test -d cppfront || git clone https://github.com/hsutter/cppfront cppfront

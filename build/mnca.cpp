@@ -5,15 +5,15 @@
 
 #include "cpp2util.h"
 
-#line 1 "mnca.cpp2"
+#line 1 "src/mnca.cpp2"
 
-#line 10 "mnca.cpp2"
+#line 10 "src/mnca.cpp2"
 class Cell;
   
 
 //=== Cpp2 type definitions and function declarations ===========================
 
-#line 1 "mnca.cpp2"
+#line 1 "src/mnca.cpp2"
 #include <raylib.h>
 
 #include <thread>
@@ -23,7 +23,7 @@ class Cell;
 #include "types.h"
 #include "config.h"
 
-#line 10 "mnca.cpp2"
+#line 10 "src/mnca.cpp2"
 class Cell {
   public: vec2<float> position {0.0f, 0.0f}; 
   public: vec2<float> velocity {0.0f, 0.0f}; 
@@ -32,22 +32,22 @@ class Cell {
   private: cpp2::u32 cell_iter_index {0}; 
 
   public: explicit Cell(auto&& other);
-#line 17 "mnca.cpp2"
+#line 17 "src/mnca.cpp2"
   public: auto operator=(auto&& other) -> Cell& ;
 
-#line 24 "mnca.cpp2"
+#line 24 "src/mnca.cpp2"
   public: explicit Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config);
 
-#line 29 "mnca.cpp2"
+#line 29 "src/mnca.cpp2"
   public: auto update(cpp2::in<Config> config) & -> void;
 
-#line 121 "mnca.cpp2"
+#line 121 "src/mnca.cpp2"
   public: auto draw(cpp2::in<Config> config) const& -> void;
   public: Cell(Cell const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(Cell const&) -> void = delete;
 
 
-#line 125 "mnca.cpp2"
+#line 125 "src/mnca.cpp2"
 };
 
 extern std::vector<Cell> cells;
@@ -59,32 +59,32 @@ extern std::atomic<bool> running;
 
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell;
 
-#line 140 "mnca.cpp2"
+#line 140 "src/mnca.cpp2"
 auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config> config) -> void;
 
-#line 151 "mnca.cpp2"
+#line 151 "src/mnca.cpp2"
 std::string_view const inline constexpr window_name = "Hello, cppfront!";
 cpp2::u64 const inline constexpr max_cells = 65536;
 
 auto main() -> int;
 
-#line 267 "mnca.cpp2"
+#line 267 "src/mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void;
 
 //=== Cpp2 function definitions =================================================
 
-#line 1 "mnca.cpp2"
+#line 1 "src/mnca.cpp2"
 
-#line 17 "mnca.cpp2"
+#line 17 "src/mnca.cpp2"
   Cell::Cell(auto&& other)
     : position{ other.position }
     , velocity{ other.velocity }
     , color_num{ other.color_num }
     , cell_iter_index{ std::move(other).cell_iter_index }{
 
-#line 22 "mnca.cpp2"
+#line 22 "src/mnca.cpp2"
   }
-#line 17 "mnca.cpp2"
+#line 17 "src/mnca.cpp2"
   auto Cell::operator=(auto&& other) -> Cell& {
     position = other.position;
     velocity = other.velocity;
@@ -92,18 +92,18 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
     cell_iter_index = std::move(other).cell_iter_index;
     return *this;
 
-#line 22 "mnca.cpp2"
+#line 22 "src/mnca.cpp2"
   }
 
-#line 24 "mnca.cpp2"
+#line 24 "src/mnca.cpp2"
   Cell::Cell(cpp2::in<float> new_x, cpp2::in<float> new_y, cpp2::in<Config> config)
     : position{ vec2<float>(new_x, new_y) }
     , color_num{ random_value<cpp2::u8>(cpp2::as_<cpp2::u8, 0>(), config.colors_number - 1) }{
 
-#line 27 "mnca.cpp2"
+#line 27 "src/mnca.cpp2"
   }
 
-#line 29 "mnca.cpp2"
+#line 29 "src/mnca.cpp2"
   auto Cell::update(cpp2::in<Config> config) & -> void{
     auto friction {0.8f}; 
     auto gravity {0.0f}; 
@@ -196,13 +196,13 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
     CPP2_UFCS(store)(position.y, std::move(py));
   }
 
-#line 121 "mnca.cpp2"
+#line 121 "src/mnca.cpp2"
   auto Cell::draw(cpp2::in<Config> config) const& -> void{
     auto color {config.all_colors[color_num]}; 
     DrawCircle(position.x, position.y, 3.0f, std::move(color));
   }
 
-#line 127 "mnca.cpp2"
+#line 127 "src/mnca.cpp2"
 std::vector<Cell> cells {}; 
 
 int window_width {1080}; 
@@ -210,14 +210,14 @@ int window_height {720};
 
 std::atomic<bool> running {true}; 
 
-#line 134 "mnca.cpp2"
+#line 134 "src/mnca.cpp2"
 [[nodiscard]] auto create_random_cell(cpp2::in<Config> config) -> Cell{
   auto rw {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_width))}; 
   auto rh {cpp2::unsafe_narrow<float>(GetRandomValue(0, window_height))}; 
   return Cell(cpp2::as_<float>(std::move(rw)), cpp2::as_<float>(std::move(rh)), config); 
 }
 
-#line 140 "mnca.cpp2"
+#line 140 "src/mnca.cpp2"
 auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config> config) -> void{
   while( (running) ) 
   {
@@ -229,7 +229,7 @@ auto update_cells(cpp2::in<ssize_t> from, cpp2::in<ssize_t> to, cpp2::in<Config>
   }
 }
 
-#line 154 "mnca.cpp2"
+#line 154 "src/mnca.cpp2"
 auto main() -> int{
   InitWindow(window_width, window_height, CPP2_UFCS(data)(window_name));
   SetTargetFPS(170);
@@ -343,7 +343,7 @@ auto main() -> int{
   CloseWindow();
 }
 
-#line 267 "mnca.cpp2"
+#line 267 "src/mnca.cpp2"
 auto print_xy(cpp2::in<Cell> cell) -> void{
   std::cout << "cell.position = " << cell.position << "\n";
 }

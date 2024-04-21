@@ -1,6 +1,7 @@
 #include "types.h2"
 
 #include <raylib.h>
+#include <raymath.h>
 
 #include "config.h2"
 
@@ -16,6 +17,9 @@ GUI : type = {
   private hover : u64 = 0;
 
   private show_board : bool = true;
+  private board_start_x : float = 0.0f;
+  private board_start_y : float = 0.0f;
+  private board_size : const float = 44.0f;
 
   public draw_text : (in this, in text: std::string_view, copy rect: Rectangle, justification: TextJustification, color: Color) = {
 
@@ -34,12 +38,7 @@ GUI : type = {
     begin_frame();
     start_layout(8, 4);
 
-    if (button("Show board", 100, 20, default_button_color))
-    {
-      show_board = !show_board;
-    }
-
-    if (button("Show board", 100, 20, default_button_color))
+    if (button("Show board", 110, 44, default_button_color))
     {
       show_board = !show_board;
     }
@@ -47,6 +46,9 @@ GUI : type = {
     if (show_board)
     {
       draw_board(config);
+    } else
+    {
+      board_start_x = -board_size * config.colors_number;
     }
 
     end_frame();
@@ -86,9 +88,12 @@ GUI : type = {
   private draw_board : (inout this, in config: Config) = {
     advance_element_counter();
 
-    size: const _ = 36;
-    start_x := element_x;
-    start_y := element_y;
+    size: const _ = board_size;
+    board_start_x = Lerp(board_start_x, element_x, 0.07f);
+    board_start_y = element_y;
+
+    start_x : const _ = std::roundf(board_start_x);
+    start_y : const _ = std::roundf(board_start_y);
 
     iy : u8 = 0; while iy < config.colors_number next iy++
     {
@@ -96,8 +101,8 @@ GUI : type = {
       DrawRectangle(start_x + (iy + 1) * size, start_y + -1, size, size, config.all_colors[iy]);
       ix : u8 = 0; while ix < config.colors_number next ix++
       {
-        x := element_x + ix * size;
-        y := element_y;
+        x := start_x + ix * size;
+        y := start_y + iy * size;
         attraction := config.attraction_matrix[iy][ix];
         color := ColorBrightness(RED, 1.0f - attraction);
         if attraction < 0.0f {

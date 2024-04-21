@@ -8,18 +8,18 @@
 
 #include "cpp2util.h"
 
-#line 1 "config.h2"
+#line 1 "src/config.h2"
 
-#line 5 "config.h2"
+#line 5 "src/config.h2"
 class Config;
   
 
 //=== Cpp2 type definitions and function declarations ===========================
 
-#line 1 "config.h2"
+#line 1 "src/config.h2"
 #include "utils.h"
 
-#line 3 "config.h2"
+#line 3 "src/config.h2"
 extern bool const RANDOM_ATTRACTION;
 
 class Config {
@@ -29,18 +29,18 @@ class Config {
 
   public: [[nodiscard]] static auto generate_attraction_matrix(cpp2::in<int> num) -> std::vector<std::vector<float>>;
 
-#line 43 "config.h2"
+#line 43 "src/config.h2"
 };
 
 
 //=== Cpp2 function definitions =================================================
 
-#line 1 "config.h2"
+#line 1 "src/config.h2"
 
-#line 3 "config.h2"
+#line 3 "src/config.h2"
 bool const RANDOM_ATTRACTION {true}; 
 
-#line 10 "config.h2"
+#line 10 "src/config.h2"
   [[nodiscard]] auto Config::generate_attraction_matrix(cpp2::in<int> num) -> std::vector<std::vector<float>>{
     auto matrix {std::vector<std::vector<float>>(num, std::vector<float>(num, 0.0f))}; 
 
