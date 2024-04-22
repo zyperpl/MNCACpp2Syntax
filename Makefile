@@ -10,8 +10,11 @@ all: create_dirs $(OUT_DIR)/mnca
 create_dirs: 
 	mkdir -p $(OUT_DIR)
 
-$(OUT_DIR)/mnca: $(OUT_DIR)/font.cpp $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp $(SRC_DIR)/build.cpp $(CPPFRONT) raylib
-	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca $(SRC_DIR)/build.cpp -I raylib/src -L raylib/src -l raylib -lm
+$(OUT_DIR)/mnca: $(OUT_DIR)/font.o $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp $(SRC_DIR)/build.cpp $(CPPFRONT) raylib
+	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca $(OUT_DIR)/font.o $(SRC_DIR)/build.cpp -I raylib/src -L raylib/src -l raylib -lm
+
+$(OUT_DIR)/font.o: $(OUT_DIR)/font.cpp $(OUT_DIR)/font_data.h $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
+	$(CXX) $(CXXFLAGS) -c -o $(OUT_DIR)/font.o $(OUT_DIR)/font.cpp
 
 $(OUT_DIR)/font.cpp: $(CPPFRONT) $(SRC_DIR)/font.cpp2 
 	$(CPPFRONT) -o $(OUT_DIR)/font.cpp $(SRC_DIR)/font.cpp2
@@ -34,10 +37,8 @@ $(OUT_DIR)/config.h: $(CPPFRONT) $(SRC_DIR)/config.h2
 $(OUT_DIR)/font_data.h: $(SRC_DIR)/font_data.h2
 	$(CPPFRONT) -o $(OUT_DIR)/font_data.h $(SRC_DIR)/font_data.h2
 
-$(SRC_DIR)/font_data.h2: $(OUT_DIR)/file2cpp2 resources/Inter-Medium.ttf
+$(SRC_DIR)/font_data.h2: $(OUT_DIR)/file2cpp2 resources/Inter-Medium.ttf resources/Inter-SemiBold.ttf
 	$(OUT_DIR)/file2cpp2 resources/Inter-Medium.ttf > $(SRC_DIR)/font_data.h2
-
-$(SRC_DIR)/font_data.h2: $(OUT_DIR)/file2cpp2 resources/Inter-SemiBold.ttf
 	$(OUT_DIR)/file2cpp2 resources/Inter-SemiBold.ttf > $(SRC_DIR)/font_data.h2
 
 $(OUT_DIR)/file2cpp2: $(OUT_DIR)/file2cpp2.cpp raylib
@@ -59,6 +60,10 @@ clean:
 	rm -f $(OUT_DIR)/mnca
 	rm -f $(OUT_DIR)/gui.h $(OUT_DIR)/gui.hpp $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp
 	rm -f $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
+	rm -f $(OUT_DIR)/font_data.h
+	rm -f $(OUT_DIR)/font.o
+	rm -f $(OUT_DIR)/file2cpp2 $(OUT_DIR)/file2cpp2.cpp
+	rm -f $(SRC_DIR)/font_data.h2
 	rmdir $(OUT_DIR) 2>/dev/null || true
 	rm -f $(CPPFRONT)
 	rm -rf raylib

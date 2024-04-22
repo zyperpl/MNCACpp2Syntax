@@ -253,7 +253,7 @@ auto main() -> int{
   std::vector<std::thread> threads {}; 
   cpp2::u64 threads_cells {0}; 
 
-  auto delegate_threads {[_0 = (&running), _1 = num_threads, _2 = (&cells), _6 = (&threads), _7 = config, _8 = (&threads_cells)]() mutable -> void{
+  auto delegate_threads {[_0 = (&running), _1 = num_threads, _2 = (&cells), _6 = (&threads), _7 = (&config), _8 = (&threads_cells)]() mutable -> void{
     *cpp2::assert_not_null(_0) = true;
     auto i {cpp2::as_<ssize_t, 0>()}; for( ; cpp2::cmp_less(i,_1); i += 1 ) {
       auto cells_size {CPP2_UFCS(ssize)((*cpp2::assert_not_null(_2)))}; 
@@ -263,7 +263,7 @@ auto main() -> int{
         to = cells_size;
       }
 
-      CPP2_UFCS(push_back)((*cpp2::assert_not_null(_6)), std::thread(update_cells, std::move(from), std::move(to), _7));
+      CPP2_UFCS(push_back)((*cpp2::assert_not_null(_6)), std::thread(update_cells, std::move(from), std::move(to), *cpp2::assert_not_null(_7)));
 
       *cpp2::assert_not_null(_8) = std::move(cells_size);
     }
