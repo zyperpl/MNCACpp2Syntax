@@ -1,13 +1,31 @@
 #include "utils.h2"
 
+#include <mutex>
+#include <shared_mutex>
+
 RANDOM_ATTRACTION: const bool = true;
+
+config_mutex : std::shared_mutex = std::shared_mutex();
 
 Config: @struct type = {
   all_colors: const std::vector<Color> = ( RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY );
   colors_number: const u8 = 5;
   attraction_matrix: std::vector<std::vector<float>>;
 
-  generate_attraction_matrix: (num: int) -> std::vector<std::vector<float>> = {
+
+  set_attraction: (inout this, i: int, j: int, val: float) -> void = {
+    _ : std::unique_lock = std::unique_lock(config_mutex);
+    attraction_matrix[i][j] = val;
+  }
+
+  get_attraction: (inout this, i: int, j: int) -> float = {
+    _ : std::shared_lock = std::shared_lock(config_mutex);
+    val: float = attraction_matrix[i][j];
+    return val;
+  }
+
+  generate_attraction_matrix: (inout this, num: int) -> std::vector<std::vector<float>> = {
+    _ : std::unique_lock = std::unique_lock(config_mutex);
     matrix := std::vector<std::vector<float>>(num, std::vector<float>(num, 0.0f));
 
     if constexpr RANDOM_ATTRACTION {

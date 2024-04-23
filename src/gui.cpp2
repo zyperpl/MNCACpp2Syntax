@@ -26,6 +26,7 @@ GUI : type = {
   private show_attraction_slider : bool = false;
   private attraction_slider_index_x : u8 = 0;
   private attraction_slider_index_y : u8 = 0;
+  private attraction_button_rect : Rectangle = Rectangle(0, 0, 0, 0);
 
   public draw_text : (in this, 
                       in text: std::string_view, 
@@ -48,18 +49,24 @@ GUI : type = {
     begin_frame();
     start_layout(8, 4);
 
-    if (button("Show board", 11 * 12, 11 * 5, default_button_color))
+    if button("Show board", 11 * 12, 11 * 5, default_button_color)
     {
       show_board = !show_board;
     }
 
-    if (show_board)
+    if show_board
     {
-      draw_board(config);
+      board_start_x = Lerp(board_start_x, element_x, 0.21f);
     } 
     else
     {
-      board_start_x = -board_size * config.colors_number;
+      board_start_x = Lerp(board_start_x, -board_size * config.colors_number * 2.0f, 0.5f);
+      show_attraction_slider = false;
+    }
+    draw_board(config);
+
+    if show_attraction_slider {
+      DrawRectangleRec(attraction_button_rect, Color(0, 0, 0, 100));
     }
 
     end_frame();
@@ -96,7 +103,7 @@ GUI : type = {
     element_y = y;
   }
 
-  private draw_board : (inout this, in config: Config) = {
+  private draw_board : (inout this, inout config: Config) = {
     advance_element_counter();
 
     size: const _ = board_size;
@@ -125,12 +132,25 @@ GUI : type = {
         before_element_y := element_y;
         element_x = x + size;
         element_y = y + size;
-        if (button(text, size, size, color))
+        if button(text, size, size, color) && show_board
         {
           attraction_slider_index_x = ix;
           attraction_slider_index_y = iy;
-          show_attraction_slider = true;          
+          show_attraction_slider = true;
+          attraction_button_rect = Rectangle(x + size, y + size, size, size);
         }
+
+        if mouse_in_rect(Rectangle(x + size, y + size, size, size)) {
+          if GetMouseWheelMoveV().y > 0 {
+            val := config.get_attraction(iy, ix);
+            config.set_attraction(iy, ix, val + 0.01f);
+          }
+          if GetMouseWheelMoveV().y < 0 {
+            val := config.get_attraction(iy, ix);
+            config.set_attraction(iy, ix, val - 0.01f);
+          }
+        }
+
         element_x = before_element_x;
         element_y = before_element_y;
       }

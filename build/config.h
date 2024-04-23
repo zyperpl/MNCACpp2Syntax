@@ -10,7 +10,7 @@
 
 #line 1 "src/config.h2"
 
-#line 5 "src/config.h2"
+#line 10 "src/config.h2"
 class Config;
   
 
@@ -19,17 +19,29 @@ class Config;
 #line 1 "src/config.h2"
 #include "utils.h"
 
-#line 3 "src/config.h2"
+#include <mutex>
+#include <shared_mutex>
+
+#line 6 "src/config.h2"
 extern bool const RANDOM_ATTRACTION;
+
+extern std::shared_mutex config_mutex;
 
 class Config {
   public: std::vector<Color> const all_colors {RED, LIME, YELLOW, MAGENTA, SKYBLUE, PINK, WHITE, VIOLET, GOLD, ORANGE, LIGHTGRAY}; 
   public: cpp2::u8 const colors_number {5}; 
   public: std::vector<std::vector<float>> attraction_matrix; 
 
-  public: [[nodiscard]] static auto generate_attraction_matrix(cpp2::in<int> num) -> std::vector<std::vector<float>>;
+#line 16 "src/config.h2"
+  public: auto set_attraction(cpp2::in<int> i, cpp2::in<int> j, cpp2::in<float> val) & -> void;
 
-#line 43 "src/config.h2"
+#line 21 "src/config.h2"
+  public: [[nodiscard]] auto get_attraction(cpp2::in<int> i, cpp2::in<int> j) & -> float;
+
+#line 27 "src/config.h2"
+  public: [[nodiscard]] auto generate_attraction_matrix(cpp2::in<int> num) & -> std::vector<std::vector<float>>;
+
+#line 61 "src/config.h2"
 };
 
 
@@ -37,11 +49,27 @@ class Config {
 
 #line 1 "src/config.h2"
 
-#line 3 "src/config.h2"
+#line 6 "src/config.h2"
 bool const RANDOM_ATTRACTION {true}; 
 
-#line 10 "src/config.h2"
-  [[nodiscard]] auto Config::generate_attraction_matrix(cpp2::in<int> num) -> std::vector<std::vector<float>>{
+std::shared_mutex config_mutex {std::shared_mutex()}; 
+
+#line 16 "src/config.h2"
+  auto Config::set_attraction(cpp2::in<int> i, cpp2::in<int> j, cpp2::in<float> val) & -> void{
+    std::unique_lock auto_1 {std::unique_lock(config_mutex)}; 
+    CPP2_ASSERT_IN_BOUNDS(CPP2_ASSERT_IN_BOUNDS(attraction_matrix, i), j) = val;
+  }
+
+#line 21 "src/config.h2"
+  [[nodiscard]] auto Config::get_attraction(cpp2::in<int> i, cpp2::in<int> j) & -> float{
+    std::shared_lock auto_1 {std::shared_lock(config_mutex)}; 
+    float val {CPP2_ASSERT_IN_BOUNDS(CPP2_ASSERT_IN_BOUNDS(attraction_matrix, i), j)}; 
+    return val; 
+  }
+
+#line 27 "src/config.h2"
+  [[nodiscard]] auto Config::generate_attraction_matrix(cpp2::in<int> num) & -> std::vector<std::vector<float>>{
+    std::unique_lock auto_1 {std::unique_lock(config_mutex)}; 
     auto matrix {std::vector<std::vector<float>>(num, std::vector<float>(num, 0.0f))}; 
 
     if constexpr (RANDOM_ATTRACTION) {
