@@ -10,3 +10,4 @@ build/mnca
 build/mnca.exe
 build/font_data.h
 src/font_data.h2
+build/file2cpp2

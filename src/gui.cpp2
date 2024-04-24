@@ -56,17 +56,29 @@ GUI : type = {
 
     if show_board
     {
-      board_start_x = Lerp(board_start_x, element_x, 0.21f);
+      board_start_x = Lerp(board_start_x, element_x, 0.07f);
     } 
     else
     {
-      board_start_x = Lerp(board_start_x, -board_size * config.colors_number * 2.0f, 0.5f);
+      board_start_x = Lerp(board_start_x, -board_size * config.colors_number * 2.0f, 0.05f);
       show_attraction_slider = false;
     }
     draw_board(config);
 
     if show_attraction_slider {
-      DrawRectangleRec(attraction_button_rect, Color(0, 0, 0, 100));
+      slider_rect := attraction_button_rect;
+      slider_rect.y -= 11.0f * 4.0f;
+      slider_rect.height += 11.0f * 8.0f;
+      slider_rect.x += 11.0f * 4.0f;
+      slider_rect.x = std::roundf(slider_rect.x);
+      slider_rect.width = 11.0f * 4.0f;
+
+      previous_value : const _ = config.get_attraction(attraction_slider_index_y, attraction_slider_index_x);
+      new_value := slider(slider_rect, previous_value, -1.0f, 1.0f);
+
+      if previous_value != new_value {
+        config.set_attraction(attraction_slider_index_y, attraction_slider_index_x, new_value);
+      }
     }
 
     end_frame();
@@ -107,7 +119,6 @@ GUI : type = {
     advance_element_counter();
 
     size: const _ = board_size;
-    board_start_x = Lerp(board_start_x, element_x, 0.07f);
     board_start_y = element_y;
 
     start_x : const _ = std::roundf(board_start_x);
@@ -134,10 +145,15 @@ GUI : type = {
         element_y = y + size;
         if button(text, size, size, color) && show_board
         {
-          attraction_slider_index_x = ix;
-          attraction_slider_index_y = iy;
-          show_attraction_slider = true;
-          attraction_button_rect = Rectangle(x + size, y + size, size, size);
+          if show_attraction_slider && attraction_slider_index_x == ix && attraction_slider_index_y == iy {
+            show_attraction_slider = false;
+          }
+          else {
+            attraction_slider_index_x = ix;
+            attraction_slider_index_y = iy;
+            show_attraction_slider = true;
+            attraction_button_rect = Rectangle(x + size, y + size, size, size);
+          }
         }
 
         if mouse_in_rect(Rectangle(x + size, y + size, size, size)) {
@@ -196,6 +212,63 @@ GUI : type = {
     element_y += rect.height + 8.0f;
 
     return check_active_rect_pressed(my_hash, rect);
+  }
+
+  slider : (inout this, copy rect: Rectangle, copy value : float, min_value : float, max_value : float) -> float = {
+    advance_element_counter();
+    my_hash : u64 = hash(element_counter, "slider");
+    enable_hover(my_hash, rect);
+    _ = check_active_rect_pressed(my_hash, rect);
+
+    color := Color(55, 55, 55, 255);
+    border_color := Color(10, 10, 10, 255);
+
+    if is_hover(my_hash) { 
+      border_color = Color(20, 20, 20, 255);
+      color = Color(75, 75, 75, 255);
+    }
+    if is_active(my_hash) {
+      border_color = Color(40, 40, 50, 255);
+      color = Color(140, 140, 140, 255);
+
+      mouse_y := mouse_position().y;
+      new_value := Lerp(min_value, max_value, 1.0f - (mouse_y - rect.y) / rect.height);
+      new_value = Clamp(new_value, min_value, max_value);
+
+      value = new_value;
+    }
+
+    roundness := 0.5f;
+    segments := 16;
+
+    tri_w := 12.0f;
+    tri_h := 18.0f;
+
+    rect.x += 6.0f;
+    DrawRectangleRounded(Rectangle(rect.x - 2.0f, rect.y - 2.0f, rect.width + 4.0f, rect.height + 4.0f), roundness, segments, border_color);
+    DrawTriangle(Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f - tri_h / 2.0f - 4.0f),
+                 Vector2(rect.x - tri_w - 2.0f, rect.y + rect.height / 2.0f),
+                 Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f + tri_h / 2.0f + 4.0f), border_color);
+    DrawTriangle(Vector2(rect.x, rect.y + rect.height / 2.0f - tri_h / 2.0f),
+                 Vector2(rect.x - tri_w, rect.y + rect.height / 2.0f),
+                 Vector2(rect.x, rect.y + rect.height / 2.0f + tri_h / 2.0f), color);
+    DrawRectangleRounded(rect, roundness, segments, color);
+
+    dial_color := ColorBrightness(color, 0.6f);
+    dial_height := 4.0f;
+
+    ratio := (value - min_value) / (max_value - min_value);
+    dial_y := rect.height - rect.height * ratio - dial_height * 0.5f;
+    dial_y = std::roundf(dial_y);
+
+    if ratio < 0.0f || ratio > 1.0f {
+      dial_color = Color(255, dial_color.g, dial_color.b, 255);
+    }
+
+    dial_rect := Rectangle(rect.x, rect.y + dial_y, rect.width, dial_height);
+    DrawRectangleRounded(dial_rect, roundness, segments, dial_color);
+
+    return value;
   }
 
   private enable_hover : (inout this, in id: u64, in rect : Rectangle) = {
