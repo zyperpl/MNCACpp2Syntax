@@ -45,20 +45,29 @@ class GUI {
   private: cpp2::u8 attraction_slider_index_y {0}; 
   private: Rectangle attraction_button_rect {Rectangle(0, 0, 0, 0)}; 
 
+  private: float previous_time {0.0f}; 
+  private: float last_move_time {0.0f}; 
+  private: Vector2 previous_mouse_position {Vector2(0.0f, 0.0f)}; 
+  private: float const hud_hide_time_max {2.0f}; 
+  private: float const layout_show_x {8.0f}; 
+  private: float const layout_hide_x {-1200.0f}; 
+  private: float layout_x {8.0f}; 
+  private: float const layout_y {4.0f}; 
+
   public: auto draw_text(
                       cpp2::in<std::string_view> text, 
                       Rectangle rect, 
                       cpp2::in<TextJustification> justification, 
                       cpp2::in<Color> color) const& -> void;
 
-#line 48 "src/gui.cpp2"
+#line 57 "src/gui.cpp2"
   public: auto draw(Config& config) & -> void;
 
-#line 87 "src/gui.cpp2"
+#line 116 "src/gui.cpp2"
   private: static const int main_mouse_button;
   private: [[nodiscard]] static auto is_mouse_pressed() -> bool;
   private: [[nodiscard]] static auto is_mouse_released() -> bool;
-  private: [[nodiscard]] static auto mouse_position() -> Vector2;
+  private: [[nodiscard]] static auto get_mouse_position() -> Vector2;
   private: [[nodiscard]] static auto mouse_in_rect(cpp2::in<Rectangle> rect) -> bool;
   private: static const Color default_button_color;
 
@@ -70,35 +79,35 @@ class GUI {
 
   private: auto begin_frame() & -> void;
 
-#line 107 "src/gui.cpp2"
+#line 136 "src/gui.cpp2"
   private: auto end_frame() & -> void;
 
-#line 113 "src/gui.cpp2"
+#line 142 "src/gui.cpp2"
   private: auto start_layout(cpp2::in<float> x, cpp2::in<float> y) & -> void;
 
-#line 118 "src/gui.cpp2"
+#line 147 "src/gui.cpp2"
   private: auto draw_board(Config& config) & -> void;
 
-#line 178 "src/gui.cpp2"
+#line 207 "src/gui.cpp2"
   private: [[nodiscard]] auto button(cpp2::in<std::string_view> text, cpp2::in<cpp2::i32> width, cpp2::in<cpp2::i32> height, Color color) & -> bool;
 
-#line 217 "src/gui.cpp2"
+#line 246 "src/gui.cpp2"
   public: [[nodiscard]] auto slider(Rectangle rect, float value, cpp2::in<float> min_value, cpp2::in<float> max_value) & -> float;
 
-#line 274 "src/gui.cpp2"
+#line 303 "src/gui.cpp2"
   private: auto enable_hover(cpp2::in<cpp2::u64> id, cpp2::in<Rectangle> rect) & -> void;
 
-#line 281 "src/gui.cpp2"
+#line 310 "src/gui.cpp2"
   private: [[nodiscard]] auto check_active_rect_pressed(cpp2::in<cpp2::u64> id, cpp2::in<Rectangle> rect) & -> bool;
 
-#line 297 "src/gui.cpp2"
+#line 326 "src/gui.cpp2"
   private: [[nodiscard]] static auto hash(cpp2::in<std::string_view> text) -> cpp2::u64;
   private: [[nodiscard]] static auto hash(cpp2::in<cpp2::u64> a, cpp2::in<std::string_view> b) -> cpp2::u64;
   public: GUI() = default;
   public: GUI(GUI const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(GUI const&) -> void = delete;
 
-#line 299 "src/gui.cpp2"
+#line 328 "src/gui.cpp2"
 };
 
 
@@ -106,7 +115,7 @@ class GUI {
 
 #line 1 "src/gui.cpp2"
 
-#line 31 "src/gui.cpp2"
+#line 40 "src/gui.cpp2"
   auto GUI::draw_text(
                       cpp2::in<std::string_view> text, 
                       Rectangle rect, 
@@ -124,10 +133,26 @@ class GUI {
     DrawTextEx(font, CPP2_UFCS(data)(text), Vector2(rect.x, std::move(rect).y), font_size, text_spacing, color);
   }
 
-#line 48 "src/gui.cpp2"
+#line 57 "src/gui.cpp2"
   auto GUI::draw(Config& config) & -> void{
+    auto current_time {GetTime()}; 
+    previous_time = current_time;
+
+    auto mouse_position {GetMousePosition()}; 
+    auto mouse_delta {Vector2Subtract(mouse_position, previous_mouse_position)}; 
+    previous_mouse_position = std::move(mouse_position);
+    if (cpp2::cmp_greater(Vector2Length(std::move(mouse_delta)),0.01f) || IsMouseButtonDown(main_mouse_button)) {
+      last_move_time = current_time;
+    }
+    if (cpp2::cmp_less(last_move_time + hud_hide_time_max,std::move(current_time))) {
+      layout_x = Lerp(layout_x, layout_hide_x, 0.27f);
+    }
+    else {
+      layout_x = Lerp(layout_x, layout_show_x, 0.46f);
+    }
+
     begin_frame();
-    start_layout(8, 4);
+    start_layout(layout_x, layout_y);
 
     if (button("Show board", 11 * 12, 11 * 5, default_button_color)) 
     {
@@ -147,11 +172,15 @@ class GUI {
 
     if (show_attraction_slider) {
       auto slider_rect {attraction_button_rect}; 
-      slider_rect.y -= 11.0f * 4.0f;
-      slider_rect.height += 11.0f * 8.0f;
+
+      slider_rect.x += layout_x;
       slider_rect.x += 11.0f * 4.0f;
       slider_rect.x = std::roundf(slider_rect.x);
       slider_rect.width = 11.0f * 4.0f;
+
+      slider_rect.y += layout_y;
+      slider_rect.y -= 11.0f * 4.0f;
+      slider_rect.height += 11.0f * 8.0f;
 
       auto const previous_value {CPP2_UFCS(get_attraction)(config, attraction_slider_index_y, attraction_slider_index_x)}; 
       auto new_value {slider(std::move(slider_rect), previous_value, -1.0f, 1.0f)}; 
@@ -166,26 +195,26 @@ class GUI {
 
   inline CPP2_CONSTEXPR int GUI::main_mouse_button = MOUSE_LEFT_BUTTON;
   [[nodiscard]] auto GUI::is_mouse_pressed() -> bool { return IsMouseButtonPressed(main_mouse_button);  }
-#line 89 "src/gui.cpp2"
+#line 118 "src/gui.cpp2"
   [[nodiscard]] auto GUI::is_mouse_released() -> bool { return IsMouseButtonReleased(main_mouse_button);  }
-#line 90 "src/gui.cpp2"
-  [[nodiscard]] auto GUI::mouse_position() -> Vector2 { return GetMousePosition();  }
-#line 91 "src/gui.cpp2"
-  [[nodiscard]] auto GUI::mouse_in_rect(cpp2::in<Rectangle> rect) -> bool { return CheckCollisionPointRec(mouse_position(), rect);  }
+#line 119 "src/gui.cpp2"
+  [[nodiscard]] auto GUI::get_mouse_position() -> Vector2 { return GetMousePosition();  }
+#line 120 "src/gui.cpp2"
+  [[nodiscard]] auto GUI::mouse_in_rect(cpp2::in<Rectangle> rect) -> bool { return CheckCollisionPointRec(get_mouse_position(), rect);  }
   inline CPP2_CONSTEXPR Color GUI::default_button_color = Color(110, 110, 110, 255);
 
-#line 94 "src/gui.cpp2"
+#line 123 "src/gui.cpp2"
   [[nodiscard]] auto GUI::is_active(cpp2::in<cpp2::u64> id) const& -> bool { return active == id;  }
-#line 95 "src/gui.cpp2"
+#line 124 "src/gui.cpp2"
   auto GUI::set_active(cpp2::in<cpp2::u64> id) & -> void { active = id;  }
-#line 96 "src/gui.cpp2"
+#line 125 "src/gui.cpp2"
   [[nodiscard]] auto GUI::is_hover(cpp2::in<cpp2::u64> id) const& -> bool { return hover == id;  }
-#line 97 "src/gui.cpp2"
+#line 126 "src/gui.cpp2"
   auto GUI::set_hover(cpp2::in<cpp2::u64> id) & -> void { hover = id;  }
-#line 98 "src/gui.cpp2"
+#line 127 "src/gui.cpp2"
   auto GUI::advance_element_counter() & -> void { element_counter += 1;  }
 
-#line 100 "src/gui.cpp2"
+#line 129 "src/gui.cpp2"
   auto GUI::begin_frame() & -> void{
     element_x = 0.0f;
     element_y = 0.0f;
@@ -193,20 +222,20 @@ class GUI {
     hover = 0;
   }
 
-#line 107 "src/gui.cpp2"
+#line 136 "src/gui.cpp2"
   auto GUI::end_frame() & -> void{
     if (is_mouse_released()) {
       active = 0;
     }
   }
 
-#line 113 "src/gui.cpp2"
+#line 142 "src/gui.cpp2"
   auto GUI::start_layout(cpp2::in<float> x, cpp2::in<float> y) & -> void{
     element_x = x;
     element_y = y;
   }
 
-#line 118 "src/gui.cpp2"
+#line 147 "src/gui.cpp2"
   auto GUI::draw_board(Config& config) & -> void{
     advance_element_counter();
 
@@ -267,7 +296,7 @@ class GUI {
     }
   }
 
-#line 178 "src/gui.cpp2"
+#line 207 "src/gui.cpp2"
   [[nodiscard]] auto GUI::button(cpp2::in<std::string_view> text, cpp2::in<cpp2::i32> width, cpp2::in<cpp2::i32> height, Color color) & -> bool{
     advance_element_counter();
     cpp2::u64 my_hash {hash(element_counter, text)}; 
@@ -307,7 +336,7 @@ class GUI {
     return check_active_rect_pressed(std::move(my_hash), std::move(rect)); 
   }
 
-#line 217 "src/gui.cpp2"
+#line 246 "src/gui.cpp2"
   [[nodiscard]] auto GUI::slider(Rectangle rect, float value, cpp2::in<float> min_value, cpp2::in<float> max_value) & -> float{
     advance_element_counter();
     cpp2::u64 my_hash {hash(element_counter, "slider")}; 
@@ -315,7 +344,7 @@ class GUI {
     static_cast<void>(check_active_rect_pressed(my_hash, rect));
 
     auto color {Color(55, 55, 55, 255)}; 
-    auto border_color {Color(10, 10, 10, 255)}; 
+    auto border_color {Color(120, 120, 120, 255)}; 
 
     if (is_hover(my_hash)) {
       border_color = Color(20, 20, 20, 255);
@@ -325,7 +354,7 @@ class GUI {
       border_color = Color(40, 40, 50, 255);
       color = Color(140, 140, 140, 255);
 
-      auto mouse_y {mouse_position().y}; 
+      auto mouse_y {get_mouse_position().y}; 
       auto new_value {Lerp(min_value, max_value, 1.0f - (std::move(mouse_y) - rect.y) / rect.height)}; 
       new_value = Clamp(new_value, min_value, max_value);
 
@@ -338,10 +367,10 @@ class GUI {
     auto tri_w {12.0f}; 
     auto tri_h {18.0f}; 
 
-    rect.x += 6.0f;
+    rect.x += tri_w + 1.0f;
     DrawRectangleRounded(Rectangle(rect.x - 2.0f, rect.y - 2.0f, rect.width + 4.0f, rect.height + 4.0f), roundness, segments, border_color);
     DrawTriangle(Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f - tri_h / 2.0f - 4.0f), 
-                 Vector2(rect.x - tri_w - 2.0f, rect.y + rect.height / 2.0f), 
+                 Vector2(rect.x - tri_w - 4.0f, rect.y + rect.height / 2.0f), 
                  Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f + tri_h / 2.0f + 4.0f), std::move(border_color));
     DrawTriangle(Vector2(rect.x, rect.y + rect.height / 2.0f - tri_h / 2.0f), 
                  Vector2(rect.x - std::move(tri_w), rect.y + rect.height / 2.0f), 
@@ -365,7 +394,7 @@ class GUI {
     return std::move(value); 
   }
 
-#line 274 "src/gui.cpp2"
+#line 303 "src/gui.cpp2"
   auto GUI::enable_hover(cpp2::in<cpp2::u64> id, cpp2::in<Rectangle> rect) & -> void{
     if (mouse_in_rect(rect) && active == 0) 
     {
@@ -373,7 +402,7 @@ class GUI {
     }
   }
 
-#line 281 "src/gui.cpp2"
+#line 310 "src/gui.cpp2"
   [[nodiscard]] auto GUI::check_active_rect_pressed(cpp2::in<cpp2::u64> id, cpp2::in<Rectangle> rect) & -> bool{
     if (mouse_in_rect(rect)) 
     {
@@ -390,8 +419,8 @@ class GUI {
     return false; 
   }
 
-#line 297 "src/gui.cpp2"
+#line 326 "src/gui.cpp2"
   [[nodiscard]] auto GUI::hash(cpp2::in<std::string_view> text) -> cpp2::u64 { return std::hash<std::string_view>()(text);  }
-#line 298 "src/gui.cpp2"
+#line 327 "src/gui.cpp2"
   [[nodiscard]] auto GUI::hash(cpp2::in<cpp2::u64> a, cpp2::in<std::string_view> b) -> cpp2::u64 { return std::hash<std::string_view>()(b) + a;  }
 

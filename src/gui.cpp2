@@ -28,6 +28,15 @@ GUI : type = {
   private attraction_slider_index_y : u8 = 0;
   private attraction_button_rect : Rectangle = Rectangle(0, 0, 0, 0);
 
+  private previous_time : float = 0.0f;
+  private last_move_time : float = 0.0f;
+  private previous_mouse_position : Vector2 = Vector2(0.0f, 0.0f);
+  private hud_hide_time_max : const float = 2.0f;
+  private layout_show_x : const float = 8.0f;
+  private layout_hide_x : const float = -1200.0f;
+  private layout_x : float = 8.0f;
+  private layout_y : const float = 4.0f;
+
   public draw_text : (in this, 
                       in text: std::string_view, 
                       copy rect: Rectangle, 
@@ -46,8 +55,24 @@ GUI : type = {
   }
 
   public draw : (inout this, inout config: Config) = {
+    current_time := GetTime();
+    previous_time = current_time;
+
+    mouse_position := GetMousePosition();
+    mouse_delta := Vector2Subtract(mouse_position, previous_mouse_position);
+    previous_mouse_position = mouse_position;
+    if Vector2Length(mouse_delta) > 0.01f || IsMouseButtonDown(main_mouse_button) {
+      last_move_time = current_time;
+    }
+    if last_move_time + hud_hide_time_max < current_time {
+      layout_x = Lerp(layout_x, layout_hide_x, 0.27f);
+    }
+    else {
+      layout_x = Lerp(layout_x, layout_show_x, 0.46f);
+    }
+
     begin_frame();
-    start_layout(8, 4);
+    start_layout(layout_x, layout_y);
 
     if button("Show board", 11 * 12, 11 * 5, default_button_color)
     {
@@ -67,11 +92,15 @@ GUI : type = {
 
     if show_attraction_slider {
       slider_rect := attraction_button_rect;
-      slider_rect.y -= 11.0f * 4.0f;
-      slider_rect.height += 11.0f * 8.0f;
+      
+      slider_rect.x += layout_x;
       slider_rect.x += 11.0f * 4.0f;
       slider_rect.x = std::roundf(slider_rect.x);
       slider_rect.width = 11.0f * 4.0f;
+
+      slider_rect.y += layout_y;
+      slider_rect.y -= 11.0f * 4.0f;
+      slider_rect.height += 11.0f * 8.0f;
 
       previous_value : const _ = config.get_attraction(attraction_slider_index_y, attraction_slider_index_x);
       new_value := slider(slider_rect, previous_value, -1.0f, 1.0f);
@@ -87,8 +116,8 @@ GUI : type = {
   private main_mouse_button : int == MOUSE_LEFT_BUTTON;
   private is_mouse_pressed : () -> bool = IsMouseButtonPressed(main_mouse_button);
   private is_mouse_released : () -> bool = IsMouseButtonReleased(main_mouse_button);
-  private mouse_position : () -> Vector2 = GetMousePosition();
-  private mouse_in_rect : (in rect: Rectangle) -> bool = CheckCollisionPointRec(mouse_position(), rect);
+  private get_mouse_position : () -> Vector2 = GetMousePosition();
+  private mouse_in_rect : (in rect: Rectangle) -> bool = CheckCollisionPointRec(get_mouse_position(), rect);
   private default_button_color : Color == Color(110, 110, 110, 255);
 
   private is_active : (in this, id: u64) -> bool = active == id;
@@ -221,7 +250,7 @@ GUI : type = {
     _ = check_active_rect_pressed(my_hash, rect);
 
     color := Color(55, 55, 55, 255);
-    border_color := Color(10, 10, 10, 255);
+    border_color := Color(120, 120, 120, 255);
 
     if is_hover(my_hash) { 
       border_color = Color(20, 20, 20, 255);
@@ -231,7 +260,7 @@ GUI : type = {
       border_color = Color(40, 40, 50, 255);
       color = Color(140, 140, 140, 255);
 
-      mouse_y := mouse_position().y;
+      mouse_y := get_mouse_position().y;
       new_value := Lerp(min_value, max_value, 1.0f - (mouse_y - rect.y) / rect.height);
       new_value = Clamp(new_value, min_value, max_value);
 
@@ -244,10 +273,10 @@ GUI : type = {
     tri_w := 12.0f;
     tri_h := 18.0f;
 
-    rect.x += 6.0f;
+    rect.x += tri_w + 1.0f;
     DrawRectangleRounded(Rectangle(rect.x - 2.0f, rect.y - 2.0f, rect.width + 4.0f, rect.height + 4.0f), roundness, segments, border_color);
     DrawTriangle(Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f - tri_h / 2.0f - 4.0f),
-                 Vector2(rect.x - tri_w - 2.0f, rect.y + rect.height / 2.0f),
+                 Vector2(rect.x - tri_w - 4.0f, rect.y + rect.height / 2.0f),
                  Vector2(rect.x + 4.0f, rect.y + rect.height / 2.0f + tri_h / 2.0f + 4.0f), border_color);
     DrawTriangle(Vector2(rect.x, rect.y + rect.height / 2.0f - tri_h / 2.0f),
                  Vector2(rect.x - tri_w, rect.y + rect.height / 2.0f),
