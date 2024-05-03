@@ -87,7 +87,7 @@ Cell: type = {
       fx := (dx / dist2) * force;
       fy := (dy / dist2) * force;
 
-      force_max : const _ = 0.5f;
+      force_max : const _ = 0.4f;
       fx = std::clamp(fx, -force_max, force_max);
       fy = std::clamp(fy, -force_max, force_max);
           

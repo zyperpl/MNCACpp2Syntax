@@ -11,10 +11,10 @@ create_dirs:
 	mkdir -p $(OUT_DIR)
 
 $(OUT_DIR)/mnca: $(OUT_DIR)/font.o $(OUT_DIR)/gui.cpp $(OUT_DIR)/mnca.cpp $(SRC_DIR)/build.cpp $(CPPFRONT) raylib
-	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca $(OUT_DIR)/font.o $(SRC_DIR)/build.cpp -I raylib/src -L raylib/src -l raylib -lm
+	$(CXX) $(CXXFLAGS) -I $(OUT_DIR) -o $(OUT_DIR)/mnca $(OUT_DIR)/font.o $(SRC_DIR)/build.cpp -I raylib/src -L raylib/src -lraylib -lm
 
 $(OUT_DIR)/font.o: $(OUT_DIR)/font.cpp $(OUT_DIR)/font_data.h $(OUT_DIR)/types.h $(OUT_DIR)/utils.h $(OUT_DIR)/config.h
-	$(CXX) $(CXXFLAGS) -c -o $(OUT_DIR)/font.o $(OUT_DIR)/font.cpp
+	$(CXX) $(CXXFLAGS) -c -o $(OUT_DIR)/font.o $(OUT_DIR)/font.cpp -I raylib/src -L raylib/src -lraylib -lm
 
 $(OUT_DIR)/font.cpp: $(CPPFRONT) $(SRC_DIR)/font.cpp2 
 	$(CPPFRONT) -o $(OUT_DIR)/font.cpp $(SRC_DIR)/font.cpp2
@@ -42,7 +42,7 @@ $(SRC_DIR)/font_data.h2: $(OUT_DIR)/file2cpp2 resources/Inter-Medium.ttf resourc
 	$(OUT_DIR)/file2cpp2 resources/Inter-SemiBold.ttf > $(SRC_DIR)/font_data.h2
 
 $(OUT_DIR)/file2cpp2: $(OUT_DIR)/file2cpp2.cpp raylib
-	$(CXX) $(CXXFLAGS) -o $(OUT_DIR)/file2cpp2 $(OUT_DIR)/file2cpp2.cpp -I raylib/src/ -L raylib/src -lraylib -lm
+	$(CXX) $(CXXFLAGS) -o $(OUT_DIR)/file2cpp2 $(OUT_DIR)/file2cpp2.cpp -I raylib/src -L raylib/src -lraylib -lm
 
 $(OUT_DIR)/file2cpp2.cpp: $(CPPFRONT) $(UTILS_SRC_DIR)/file2cpp2.cpp2 
 	$(CPPFRONT) -o $(OUT_DIR)/file2cpp2.cpp $(UTILS_SRC_DIR)/file2cpp2.cpp2

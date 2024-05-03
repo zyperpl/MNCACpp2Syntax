@@ -165,7 +165,7 @@ auto print_xy(cpp2::in<Cell> cell) -> void;
       auto fx {(std::move(dx) / dist2) * force}; 
       auto fy {(std::move(dy) / std::move(dist2)) * std::move(force)}; 
 
-      auto const force_max {0.5f}; 
+      auto const force_max {0.4f}; 
       fx = std::clamp(fx, -force_max, force_max);
       fy = std::clamp(fy, -force_max, std::move(force_max));
 
