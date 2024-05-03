@@ -1,4 +1,6 @@
-# Multiple Neighborhoods Cellular Automata - C++2 Syntax Experiment Project
+# C++2 Syntax Experiment Project - Multiple Neighborhoods Cellular Automata
+
+![animation](screenshots/ui.gif)
 
 ## Description
 
@@ -26,6 +28,10 @@ make
 ```bash
 ./mnca
 ```
+
+## Screenshots
+<img src="screenshots/screenshot3.png" alt="Screenshot 3" width="640"/><img src="screenshots/screenshot4.png" alt="Screenshot 4" width="640"/>
+<img src="screenshots/screenshot5.png" alt="Screenshot 5" width="640"/><img src="screenshots/screenshot6.png" alt="Screenshot 6" width="640"/>
 
 ## License
 MIT License (see [LICENSE](./LICENSE) file)
